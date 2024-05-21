@@ -1,3 +1,11 @@
+'''
+This code is from https://github.com/qiskit-community/ChebAE/blob/main/chebae.ipynb with some small modifications.
+The chebae() function records the maximum depth as well as the time complexity and returns those.
+So no changes to the actual algorithm, just returning extra information from the algorithm.
+'''
+
+
+
 import numpy as np
 from scipy.special import eval_chebyt as cheb
 from scipy.stats import binom

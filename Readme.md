@@ -1,10 +1,11 @@
 # Readme
 
-This repository contains all of the code required to generate the tables and plots provided in arXiv:xxx.xxxx. To recreate the images simply run the provided notebook plots.ipynb. This will use the precomputed results stored in pickle files to generate the plots.
+This repository contains all of the code required to generate the tables and plots provided in arXiv:2405.14697. To recreate the images simply run the provided notebook plots.ipynb. This will use the precomputed results stored in pickle files to generate the plots.
 
-Should you want to run your own simulations and learn how to use the compressed sensing amplitude estimation approach, we recommend looking at the notebook ula_ae_example.ipynb. This contains a minimal working example demonstrating the functionality. 
+Should you want to run your own simulations and learn how to use the compressed sensing amplitude estimation approach, we recommend looking at the notebook ula_ae_example.ipynb. This contains a minimal working example demonstrating the functionality.
 
 All of the data used to generate the results in the paper can be recreated by running the "run_ae_sims.py" python script from the command line with the following commands. This first code block generates the data needed for Fig. 3 and Tab. 1. It runs 500 Monte Carlo trials of the csAE approach for amplitudes a=[0.1, 0.2, ..., 0.9]. With 4 threads on a small laptop this takes about 4.5 hours to complete.
+
 ```
 python run_ae_sims.py --save --dir sims_C1.5_final --nthreads=4 --num_mc=500 --num_lengths=8 --C=1.5
 python run_ae_sims.py --save --dir sims_C1.8_final --nthreads=4 --num_mc=500 --num_lengths=8 --C=1.8

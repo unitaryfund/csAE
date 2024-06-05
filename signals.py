@@ -42,7 +42,7 @@ class TwoqULASignal(ULASignal):
             self.M = M
             depths, n_samples = self._get_depths(self.M, C=C)
             self.depths = depths
-            self.n_samples = n_samples
+            self.n_samples = np.array(n_samples)
             # self.depths = self._get_depths(self.M)
             self.q = len(self.M)//2 if len(self.M) % 2 == 0 else len(self.M)//2 + 1
             self.idx = self.get_idx()
@@ -81,12 +81,12 @@ class TwoqULASignal(ULASignal):
         return covariance_matrix
     
 
-    def get_cov_matrix_toeplitz(self, theta, n_samples, eta=0.0, C=1.2):
+    def get_cov_matrix_toeplitz(self, signal, C=1.2):
         '''
         This generates R tilde of DOI: 10.1109/LSP.2015.2409153 and only stores a column and row, which entirely 
         defines a Toeplitz matrix
         '''
-        signal = self.estimate_signal(n_samples, theta, eta=eta)
+        # signal = self.estimate_signal(n_samples, theta, eta=eta)
         self.ULA_signal = get_ula_signal(self.q, self.idx, signal)
         total_size = len(self.ULA_signal)
         ULA_signal = self.ULA_signal
@@ -96,6 +96,7 @@ class TwoqULASignal(ULASignal):
         
         return subarray_col
     
+    #TODO: this can be more efficiently implemented
     def get_idx(self):
         virtual_locations = []
         depths = self.depths
@@ -159,6 +160,7 @@ class TwoqULASignal(ULASignal):
     def estimate_signal(self, n_samples, theta, eta=0.0):
         depths = self.depths
         signals = np.zeros(len(depths), dtype = np.complex128)
+        cos_signal = np.zeros(len(depths), dtype = np.complex128)
         for i,n in enumerate(depths):
             # Get the exact measuremnt probabilities
             p0 = P0(n, theta)
@@ -170,12 +172,15 @@ class TwoqULASignal(ULASignal):
             # Get the "noisy" probabilities by sampling and adding a bias term that pushes towards 50/50 mixture
             eta_n = (1.0-eta)**(n+1) # The error at depth n increases as more queries are implemented
             p0_estimate = np.random.binomial(n_samples[i], eta_n*p0 + (1.0-eta_n)*0.5)/n_samples[i]
-            p1_estimate = 1.0 - p0_estimate
+            p1_estimate = np.random.binomial(n_samples[i], eta_n*p1 + (1.0-eta_n)*0.5)/n_samples[i]
             p0x_estimate = np.random.binomial(n_samples[i], eta_n*p0x + (1.0-eta_n)*0.5)/n_samples[i]
             p1x_estimate = 1.0 - p0x_estimate
             
             # Estimate theta
             theta_estimated = np.arctan2(p0x_estimate - p1x_estimate, p0_estimate - p1_estimate)
+
+            # estimate cos(2n+1)2theta
+            cos_signal[i] = p0_estimate - p1_estimate
             
             # Store this to determine angle at theta = 0 or pi/2
             if i==0:
@@ -184,5 +189,6 @@ class TwoqULASignal(ULASignal):
             # Compute f(n) - Eq. 3
             fi_estimate = np.exp(1.0j*theta_estimated)
             signals[i] = fi_estimate
+        self.cos_signal = cos_signal
         
         return signals    

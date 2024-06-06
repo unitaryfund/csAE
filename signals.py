@@ -188,6 +188,8 @@ class TwoqULASignal(ULASignal):
 
             # Compute f(n) - Eq. 3
             fi_estimate = np.exp(1.0j*theta_estimated)
+
+            # fi_estimate = 2*p0_estimate - 1 + 1.0j*np.sqrt(1-(2*p0_estimate - 1)**2)
             signals[i] = fi_estimate
         self.cos_signal = cos_signal
         

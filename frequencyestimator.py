@@ -133,7 +133,6 @@ class EstimateFrequency(metaclass = ABCMeta):
         esT, vsT = np.linalg.eigh( T )
         esT_sort_idx = np.argsort(esT)[::-1]
         lm_eig = np.matrix(V.T @ (vsT[:, esT_sort_idx[:n].squeeze() ]))
-        
         # Form S and G
         self.S = np.matrix(lm_eig)
 
@@ -152,7 +151,7 @@ class ESPIRIT(EstimateFrequency):
         if lanczos:   
             self.R = np.ascontiguousarray(self.R, dtype=np.complex128)
             if lanczos_toeplitz:
-                self._eig_decomp_lanczost(n, m=50)
+                self._eig_decomp_lanczost(n, m=100)
             else:
                 self._eig_decomp_lanczos(n, m=100)
         else:
@@ -166,7 +165,7 @@ class ESPIRIT(EstimateFrequency):
         
         S1 = np.matrix(self.S[0:-1, :], dtype=np.complex128)
         S2 = np.matrix(self.S[1:, :], dtype=np.complex128)
-
+        # print(np.abs(self.S))
         Phi = np.linalg.pinv(S1) @ S2
 
         eigs, _ = np.linalg.eig(Phi)

@@ -58,12 +58,12 @@ class TwoqULASignal(ULASignal):
             pickle.dump((self.idx, self.depths, self.n_samples, self.M), handle, protocol=pickle.HIGHEST_PROTOCOL)
         
     
-    def get_cov_matrix(self, theta, n_samples):
+    def get_cov_matrix(self, signal):
         '''
         This generates Eq. 13 in the paper DOI: 10.1109/DSP-SPE.2011.5739227 using the 
         technique from DOI:10.1109/LSP.2015.2409153
         '''
-        self.ULA_signal = self.get_ula_signal(theta, n_samples)
+        self.ULA_signal = get_ula_signal(self.q, self.idx, signal)
         total_size = len(self.ULA_signal)
         ULA_signal = self.ULA_signal
 
@@ -71,7 +71,8 @@ class TwoqULASignal(ULASignal):
         This uses the techinque from DOI:10.1109/LSP.2015.2409153
         '''
         subarray_col = ULA_signal[total_size//2:]
-        subarray_row = np.conj(subarray_col)
+        subarray_row = ULA_signal[:total_size//2+1] #np.conj(subarray_col)
+        print(len(subarray_col), len(subarray_row))
         covariance_matrix = toeplitz(subarray_col, subarray_row)
         
         
@@ -81,7 +82,7 @@ class TwoqULASignal(ULASignal):
         return covariance_matrix
     
 
-    def get_cov_matrix_toeplitz(self, signal, C=1.2):
+    def get_cov_matrix_toeplitz(self, signal):
         '''
         This generates R tilde of DOI: 10.1109/LSP.2015.2409153 and only stores a column and row, which entirely 
         defines a Toeplitz matrix
@@ -93,6 +94,9 @@ class TwoqULASignal(ULASignal):
         
         subarray_col = ULA_signal[total_size//2:]
         subarray_row = np.conj(subarray_col)
+
+        #TODO: R: row i = ULA_signal[i : total_size//2 + i]
+        # return R
         
         return subarray_col
     
@@ -163,7 +167,7 @@ class TwoqULASignal(ULASignal):
         cos_signal = np.zeros(len(depths), dtype = np.complex128)
         for i,n in enumerate(depths):
             # Get the exact measuremnt probabilities
-            p0 = P0(n, theta)
+            p0 = P0(n, theta) #cos((2n+1)theta)^2 = 0.5 + 0.5*cos(n*w'+w) 
             p1 = P1(n, theta)
 
             p0x = P0x(n,theta)
@@ -180,14 +184,22 @@ class TwoqULASignal(ULASignal):
             theta_estimated = np.arctan2(p0x_estimate - p1x_estimate, p0_estimate - p1_estimate)
 
             # estimate cos(2n+1)2theta
-            cos_signal[i] = p0_estimate - p1_estimate
+            cos_signal[i] = 2*p0_estimate - 1
             
             # Store this to determine angle at theta = 0 or pi/2
             if i==0:
                 self.p0mp1 = p0_estimate - p1_estimate
 
             # Compute f(n) - Eq. 3
-            fi_estimate = np.exp(1.0j*theta_estimated)
+            # theta1 = 0.3
+            # theta2 = 0.6
+            # fi_estimate = 0.5*np.exp(-1.0j*(n+1)*theta1) + 0.5*np.exp(-1.0j*(n+1)*theta2)# + np.random.normal(0.0, 0.0001)
+            # fi_estimate = np.exp(1.0j*theta_estimated)
+            # fi_estimate = (2*p0_estimate - 1)*np.exp(1.0j*np.random.normal(0.0, 0.0001))
+            # fi_estimate = (2*p0_estimate - 1)*np.exp(1.0j*np.pi/4)
+            # fi_estimate = (2*p0_estimate - 1) + np.random.normal(0.0, 0.0001)
+            fi_estimate = (2*p0_estimate - 1)
+            # fi_estimate = np.cos((2*n+1)*2*theta)
 
             # fi_estimate = 2*p0_estimate - 1 + 1.0j*np.sqrt(1-(2*p0_estimate - 1)**2)
             signals[i] = fi_estimate

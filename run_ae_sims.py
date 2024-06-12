@@ -25,12 +25,21 @@ warnings.simplefilter('ignore', category=NumbaDeprecationWarning)
 warnings.simplefilter('ignore', category=NumbaPendingDeprecationWarning)
 
 
-def run(theta, n_samples, ula_signal, espirit, n=2, eta=0.0):
-    R = ula_signal.get_cov_matrix_toeplitz(theta, n_samples=n_samples, eta=eta)
-    theta_est = espirit.estimate_theta_toeplitz(R, n=n)
+def run(theta, ula_signal, espirit, C=3, n=2, eta=0.0):
+    signal = ula_signal.estimate_signal(ula_signal.n_samples, theta, eta=eta)
+    R = ula_signal.get_cov_matrix_toeplitz(signal, C=C)
+    theta_est, angle = espirit.estimate_theta_toeplitz(R, n=n)
     error = np.abs(np.sin(theta)-np.sin(theta_est)) 
     theta = theta_est
-    
+
+    # fft = np.abs(np.fft.fft(R))
+    # amax = np.argmax(fft[:len(fft)//2])
+
+    # error = np.min([np.abs(np.sin(theta) - np.sin(np.pi*(len(fft)-amax)/(2*len(fft)))), 
+    #                 np.abs(np.sin(theta) - np.sin(np.pi*(amax)/(2*len(fft))))])
+    # thetas = [np.pi*(len(fft)-amax)/(2*len(fft)) , np.pi*(amax)/(2*len(fft))]
+    # theta = thetas[0]
+
     return error, theta
 
 if __name__ == "__main__":
@@ -103,12 +112,14 @@ if __name__ == "__main__":
             # account for the fact that the Grover oracle has two invocations of the unitary U, but is 
             # preceded by a single invocation of U (see Eq. 2 in paper). This accounts for the shots required
             # for that single U operator, which costs half as much as the Grover oracle.
-            num_queries[r] = 2*np.sum(np.array(ula_signal.depths)*np.array(n_samples)) + n_samples[0]
+
+            # num_queries[r] = 2*np.sum(np.array(ula_signal.depths)*np.array(n_samples)) + n_samples[0]
+            num_queries[r] = np.sum(np.array(ula_signal.depths)*np.array(n_samples)) + n_samples[0]//2
             max_single_query[r] = np.max(ula_signal.depths)
 
             pool = multiprocessing.Pool(num_threads)
             start = time.time()
-            processes = [pool.apply_async(run, args=(theta, n_samples, ula_signal, espirit, 2, args.eta)) for _ in range(num_mc)]
+            processes = [pool.apply_async(run, args=(theta, ula_signal, espirit, args.C, 2, args.eta)) for _ in range(num_mc)]
             sims = [p.get() for p in processes]
             for k in range(num_mc):
                 errors[r,k], thetas[r,k] = sims[k]

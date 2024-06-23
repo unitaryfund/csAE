@@ -194,11 +194,11 @@ class TwoqULASignal(ULASignal):
             # theta1 = 0.3
             # theta2 = 0.6
             # fi_estimate = 0.5*np.exp(-1.0j*(n+1)*theta1) + 0.5*np.exp(-1.0j*(n+1)*theta2)# + np.random.normal(0.0, 0.0001)
-            # fi_estimate = np.exp(1.0j*theta_estimated)
+            fi_estimate = np.exp(1.0j*theta_estimated)
             # fi_estimate = (2*p0_estimate - 1)*np.exp(1.0j*np.random.normal(0.0, 0.0001))
             # fi_estimate = (2*p0_estimate - 1)*np.exp(1.0j*np.pi/4)
             # fi_estimate = (2*p0_estimate - 1) + np.random.normal(0.0, 0.0001)
-            fi_estimate = (2*p0_estimate - 1)
+            # fi_estimate = (2*p0_estimate - 1)
             # fi_estimate = np.cos((2*n+1)*2*theta)
 
             # fi_estimate = 2*p0_estimate - 1 + 1.0j*np.sqrt(1-(2*p0_estimate - 1)**2)

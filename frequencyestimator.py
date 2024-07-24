@@ -85,6 +85,19 @@ def Lanczost( A, v, m=100):
     return T, V
 
 
+@njit
+def _estimate_pseudo_spectrum_jit(pseudo_spectrum, all_w, S):
+        
+        smatrix = S @ np.transpose(np.conjugate(S))
+        m = np.shape(smatrix)[0]
+        Q = np.eye(m, dtype=np.complex128) - smatrix
+        
+        for i in range(len(all_w)):
+            w = all_w[i]
+            a = np.transpose(np.exp(-1j * w * np.arange(0, m)))
+            pseudo_spectrum[i] = 1.0 / np.abs((np.transpose(np.conjugate(a)) @ Q @ a))
+
+
 class EstimateFrequency(metaclass = ABCMeta):
     
     @abstractmethod
@@ -187,3 +200,42 @@ class ESPIRIT(EstimateFrequency):
             w = np.abs(w-np.pi/2.0)
 
         return w, angle
+    
+
+class MUSIC(EstimateFrequency):
+
+    def __init__(self, resolution=1000, all_w = None):
+        self.pseudo_spectrum = None
+        self.all_w = all_w if all_w is not None else np.linspace(0.0, np.pi, resolution)
+        
+    def estimate_theta(self, R, n=1, lanczos=False):
+        self.R = R
+        if lanczos:   
+            self.R = np.ascontiguousarray(self.R)
+            self._eig_decomp_lanczos(n)
+        else:
+            self._eig_decomp(n)
+        self._estimate_pseudo_spectrum()
+        self._remember_spectrum_peaks()
+        return self.w
+        
+    def refine(self, all_w):
+        assert self.R is not None, "You must first perform the eigendecomposition of the ULA signal"
+        self.all_w = all_w
+        self._estimate_pseudo_spectrum()
+        self._remember_spectrum_peaks()
+        return self.w    
+
+    def _estimate_pseudo_spectrum(self):
+        self.pseudo_spectrum = np.zeros(len(self.all_w))
+        _estimate_pseudo_spectrum_jit(self.pseudo_spectrum, self.all_w, np.array(self.S, dtype=np.complex128))
+
+    def _remember_spectrum_peaks(self):
+        # could be replaced by find-peaks if we want all 
+        w_max_idx = np.argmax(self.pseudo_spectrum)
+        self.w = self.all_w[w_max_idx]/4 # Divide by 4 because of sampling... i don't really understand this
+
+    def _get_response_vector(self, w):
+        a = np.exp(-1j * w * np.arange(0, self.m) * self.sig.Ts)
+        return np.matrix(a).T
+    

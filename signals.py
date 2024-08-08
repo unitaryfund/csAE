@@ -183,6 +183,11 @@ class TwoqULASignal(ULASignal):
             
             # Estimate theta
             theta_estimated = np.arctan2(p0x_estimate - p1x_estimate, p0_estimate - p1_estimate)
+            theta_estimated = np.arccos(2*p0_estimate - 1)
+
+            cos = 2*p0_estimate - 1
+            sin = np.sqrt(1-cos**2)
+
 
             # estimate cos(2n+1)2theta
             cos_signal[i] = 2*p0_estimate - 1
@@ -196,10 +201,11 @@ class TwoqULASignal(ULASignal):
             # theta2 = 0.6
             # fi_estimate = 0.5*np.exp(-1.0j*(n+1)*theta1) + 0.5*np.exp(-1.0j*(n+1)*theta2)# + np.random.normal(0.0, 0.0001)
             # fi_estimate = np.exp(1.0j*theta_estimated)
+            fi_estimate = cos + 1.0j*sin
             # fi_estimate = (2*p0_estimate - 1)*np.exp(1.0j*np.random.normal(0.0, 0.0001))
             # fi_estimate = (2*p0_estimate - 1)*np.exp(1.0j*np.pi/4)
             # fi_estimate = (2*p0_estimate - 1) + np.random.normal(0.0, 0.0001)
-            fi_estimate = (2*p0_estimate - 1)
+            # fi_estimate = (2*p0_estimate - 1)
             # fi_estimate = np.cos((2*n+1)*2*theta)
 
             # fi_estimate = 2*p0_estimate - 1 + 1.0j*np.sqrt(1-(2*p0_estimate - 1)**2)

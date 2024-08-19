@@ -58,12 +58,13 @@ class TwoqULASignal(ULASignal):
             pickle.dump((self.idx, self.depths, self.n_samples, self.M), handle, protocol=pickle.HIGHEST_PROTOCOL)
         
     
-    def get_cov_matrix(self, theta, n_samples):
+    def get_cov_matrix(self, theta, n_samples, eta=0.0):
         '''
         This generates Eq. 13 in the paper DOI: 10.1109/DSP-SPE.2011.5739227 using the 
         technique from DOI:10.1109/LSP.2015.2409153
         '''
-        self.ULA_signal = self.get_ula_signal(theta, n_samples)
+        signal = self.estimate_signal(n_samples, theta, eta=eta)
+        self.ULA_signal = get_ula_signal(self.q, self.idx, signal)
         total_size = len(self.ULA_signal)
         ULA_signal = self.ULA_signal
 
@@ -154,11 +155,14 @@ class TwoqULASignal(ULASignal):
             x = int((np.ceil(C*(len(physLoc)-i)))) # sims_99
             n_samples.append(x if x!=0 else 1)
 
+        n_samples[0] = 1000
+
         return physLoc, n_samples
     
     def estimate_signal(self, n_samples, theta, eta=0.0):
         depths = self.depths
         signals = np.zeros(len(depths), dtype = np.complex128)
+        # print(depths)
         for i,n in enumerate(depths):
             # Get the exact measuremnt probabilities
             p0 = P0(n, theta)
@@ -171,15 +175,44 @@ class TwoqULASignal(ULASignal):
             eta_n = (1.0-eta)**(n+1) # The error at depth n increases as more queries are implemented
             p0_estimate = np.random.binomial(n_samples[i], eta_n*p0 + (1.0-eta_n)*0.5)/n_samples[i]
             p1_estimate = 1.0 - p0_estimate
-            p0x_estimate = np.random.binomial(n_samples[i], eta_n*p0x + (1.0-eta_n)*0.5)/n_samples[i]
-            p1x_estimate = 1.0 - p0x_estimate
+            # p0x_estimate = np.random.binomial(n_samples[i], eta_n*p0x + (1.0-eta_n)*0.5)/n_samples[i]
+            # p1x_estimate = 1.0 - p0x_estimate
+
+            # Determine which quadrant to place theta estimated in
+            if i > 0:
+
+                real_sign = np.sign(np.real((signals[0])**(2*n+1))) # Sign of the cosine term
+                imag_sign = np.sign(np.imag((signals[0])**(2*n+1))) # Sign of the sine term
+
+                # print(real_sign)
+                # print(imag_sign)
+                # print(np.angle((signals[0])**(2*n+1))/np.pi)
+
+                theta_cos = 2*np.arccos(np.sqrt(p0_estimate))
+
+                if imag_sign < 0:
+                    theta_estimated = -theta_cos
+                else:
+                    theta_estimated = theta_cos
+                
+                # theta_estimated = 2*np.arctan2(imag_sign*np.sqrt(p1), real_sign*np.sqrt(p0))
+                # print(f'theta_cos: {theta_cos/np.pi}')
+                # print(f'theta_estimated: {theta_estimated/np.pi}')
+                # print(f'2*theta*(2n+1): {2*theta*(2*n+1)/np.pi % 2}')
+
+            else:
+                theta_estimated = 2*np.arctan2(np.sqrt(p1_estimate), np.sqrt(p0_estimate)) # always between 0 and pi/2
+                # print(f'theta_estimated: {theta_estimated/np.pi}')
+                
             
             # Estimate theta
-            theta_estimated = np.arctan2(p0x_estimate - p1x_estimate, p0_estimate - p1_estimate)
+            # theta_estimated = np.arctan2(p0x_estimate - p1x_estimate, p0_estimate - p1_estimate)
+            # theta_estimated_old = np.arctan2(p0x - p1x, p0 - p1)
+            # print(f'theta_estimated_old: {theta_estimated_old/np.pi}\n')
             
             # Store this to determine angle at theta = 0 or pi/2
-            if i==0:
-                self.p0mp1 = p0_estimate - p1_estimate
+            # if i==0:
+            #     self.p0mp1 = p0_estimate - p1_estimate
 
             # Compute f(n) - Eq. 3
             fi_estimate = np.exp(1.0j*theta_estimated)

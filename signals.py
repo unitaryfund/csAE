@@ -154,13 +154,13 @@ class TwoqULASignal(ULASignal):
         for i in range(len(physLoc)):
             x = int((np.ceil(C*(len(physLoc)-i)))) # sims_99
             n_samples.append(x if x!=0 else 1)
-
-        n_samples[0] = 1000
+            # n_samples.append(C)
 
         return physLoc, n_samples
     
     def estimate_signal(self, n_samples, theta, eta=0.0):
         depths = self.depths
+        print(self.depths)
         signals = np.zeros(len(depths), dtype = np.complex128)
         # print(depths)
         for i,n in enumerate(depths):
@@ -181,19 +181,41 @@ class TwoqULASignal(ULASignal):
             # Determine which quadrant to place theta estimated in
             if i > 0:
 
+                residual = 2*n+1
+                for k in range(i):
+                    residual = residual - (2*depths[i-1-k]+1)
+                    if residual < 0:
+                        residual = residual + (2*depths[i-1-k]+1)
+                        break
+                # print(f'n: {n}')
+                # print(f'residual: {residual}')
+                # print(f'k: {k}\n')
+
+                quad_estimate = 1.0
+                for kk in range(k):
+                    quad_estimate = quad_estimate*signals[i-1-kk]
+                quad_estimate = quad_estimate*(signals[0]**residual)
+
+                real_signq = np.sign(np.real(quad_estimate)) # Sign of the cosine term
+                imag_signq = np.sign(np.imag(quad_estimate)) # Sign of the sine term
+
                 real_sign = np.sign(np.real((signals[0])**(2*n+1))) # Sign of the cosine term
                 imag_sign = np.sign(np.imag((signals[0])**(2*n+1))) # Sign of the sine term
 
                 # print(real_sign)
+                # print(real_signq)
                 # print(imag_sign)
+                # print(imag_signq)
                 # print(np.angle((signals[0])**(2*n+1))/np.pi)
 
                 theta_cos = 2*np.arccos(np.sqrt(p0_estimate))
 
-                if imag_sign < 0:
+                if imag_signq < 0:
                     theta_estimated = -theta_cos
                 else:
                     theta_estimated = theta_cos
+
+                # theta_estimated = -theta_cos
                 
                 # theta_estimated = 2*np.arctan2(imag_sign*np.sqrt(p1), real_sign*np.sqrt(p0))
                 # print(f'theta_cos: {theta_cos/np.pi}')

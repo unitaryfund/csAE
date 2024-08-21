@@ -187,4 +187,4 @@ class ESPIRIT(EstimateFrequency):
         elif (np.abs(w-np.pi/2) < 1/m) and (p0mp1 > 0.999999):
             w = np.abs(w-np.pi/2.0)
 
-        return w
+        return w, eigs

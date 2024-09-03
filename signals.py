@@ -43,7 +43,6 @@ class TwoqULASignal(ULASignal):
             depths, n_samples = self._get_depths(self.M, C=C)
             self.depths = depths
             self.n_samples = n_samples
-            # self.depths = self._get_depths(self.M)
             self.q = len(self.M)//2 if len(self.M) % 2 == 0 else len(self.M)//2 + 1
             self.idx = self.get_idx()
         elif isinstance(ula, str):
@@ -58,12 +57,12 @@ class TwoqULASignal(ULASignal):
             pickle.dump((self.idx, self.depths, self.n_samples, self.M), handle, protocol=pickle.HIGHEST_PROTOCOL)
         
     
-    def get_cov_matrix(self, theta, n_samples):
+    def get_cov_matrix(self, signal):
         '''
         This generates Eq. 13 in the paper DOI: 10.1109/DSP-SPE.2011.5739227 using the 
         technique from DOI:10.1109/LSP.2015.2409153
         '''
-        self.ULA_signal = self.get_ula_signal(theta, n_samples)
+        self.ULA_signal = self.get_ula_signal(self.q, self.idx, signal)
         total_size = len(self.ULA_signal)
         ULA_signal = self.ULA_signal
 
@@ -81,12 +80,11 @@ class TwoqULASignal(ULASignal):
         return covariance_matrix
     
 
-    def get_cov_matrix_toeplitz(self, theta, n_samples, eta=0.0, C=1.2):
+    def get_cov_matrix_toeplitz(self, signal):
         '''
         This generates R tilde of DOI: 10.1109/LSP.2015.2409153 and only stores a column and row, which entirely 
         defines a Toeplitz matrix
         '''
-        signal = self.estimate_signal(n_samples, theta, eta=eta)
         self.ULA_signal = get_ula_signal(self.q, self.idx, signal)
         total_size = len(self.ULA_signal)
         ULA_signal = self.ULA_signal

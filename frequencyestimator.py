@@ -136,6 +136,7 @@ class EstimateFrequency(metaclass = ABCMeta):
         
         # Form S and G
         self.S = np.matrix(lm_eig)
+        self.eigs = esT[esT_sort_idx]
 
 
 class ESPIRIT(EstimateFrequency):
@@ -187,4 +188,4 @@ class ESPIRIT(EstimateFrequency):
         elif (np.abs(w-np.pi/2) < 1/m) and (p0mp1 > 0.999999):
             w = np.abs(w-np.pi/2.0)
 
-        return w
+        return w, eigs

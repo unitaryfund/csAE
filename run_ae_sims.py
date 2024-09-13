@@ -26,8 +26,9 @@ warnings.simplefilter('ignore', category=NumbaPendingDeprecationWarning)
 
 
 def run(theta, n_samples, ula_signal, espirit, n=2, eta=0.0):
-    R = ula_signal.get_cov_matrix_toeplitz(theta, n_samples=n_samples, eta=eta)
-    theta_est = espirit.estimate_theta_toeplitz(R, n=n)
+    signal = ula_signal.estimate_signal(n_samples, theta, eta)
+    R = ula_signal.get_cov_matrix_toeplitz(signal)
+    theta_est, _ = espirit.estimate_theta_toeplitz(R, n=n)
     error = np.abs(np.sin(theta)-np.sin(theta_est)) 
     theta = theta_est
     
@@ -40,7 +41,7 @@ if __name__ == "__main__":
     parser.add_argument('--dir', type=str, help="Directory to save output files (default: sims/).", default="sims/")
     parser.add_argument('--nthreads', type=int, help="Number of threads to use for simulation (default: 1).", default=1)
     parser.add_argument('--num_mc', type=int, help="Number of Monte Carlo trials (default: 500)", default=500)
-    parser.add_argument('--num_lengths', type=int, help="Maximum length array to use (default: 8)", default=8)
+    parser.add_argument('--num_lengths', type=int, help="Maximum length array to use (default: 8)", default=5)
     parser.add_argument('--eta', type=float, help="Add a bias term to the estimated output probabilities. This biases the output towards a 50/50 mixture assuming noise in the circuit causes depolarization (default=0.0)", default=0.0)
     parser.add_argument('--aval', type=float, help="If set, this defines the amplitude to be estimated. If not set, the range [0.1, 0.2, ..., 0.9] is used instead (default=None)", default=None)
     parser.add_argument('--fixed_sample', type=int, help="If set, this sets the sampling strategy to do a fixed number of samples at each depth, rather than one that samples more at lower depth and less and longer depth (default=None)", default=None)

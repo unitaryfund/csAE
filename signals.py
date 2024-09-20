@@ -90,7 +90,6 @@ class TwoqULASignal(ULASignal):
         This generates R tilde of DOI: 10.1109/LSP.2015.2409153 and only stores a column and row, which entirely 
         defines a Toeplitz matrix
         '''
-        print(f'signal[0] in get_cov: {np.real(signal[0])}')
         self.ULA_signal = _get_ula_signal(self.q, self.idx, signal)
         total_size = len(self.ULA_signal)
         ULA_signal = self.ULA_signal
@@ -227,5 +226,5 @@ class TwoqULASignal(ULASignal):
             # Compute f(n) - Eq. 3
             fi_estimate = np.exp(1.0j*theta_estimated)
             self.signal[i] = fi_estimate
-        
+
         return self.signal 

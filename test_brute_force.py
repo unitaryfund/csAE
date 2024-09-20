@@ -19,18 +19,18 @@ narray = [3, 3, 3, 3, 2, 2, 2, 2]
 narray = [2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
 q = 6
 narray = [2] * q
-narray = [3,3, 2, 2, 2, 2]
+narray = [2, 2, 2, 2, 2, 2]
 # Set the actual amplitude
-a = 0.8
+a = 0.2
 theta = np.arcsin(a)
 
 # This sets up the simulation that simulates the measured amplitudes at the various physical locations.
 # It uses a C=1.5 value, which corresponds to the sampling schedule given in Eq. 16. The variable C here
 # is the parameter K in the paper.
-ula_signal = TwoqULASignal(M=narray, C=3)
+ula_signal = TwoqULASignal(M=narray, C=3.0)
 
 # Number of Monte Carlo trials used to estimate statistics. We tend to use 500 in the paper. Choose 100 here for speed.
-num_mc = 10
+num_mc = 50
 thetas = np.zeros(num_mc, dtype=float)
 errors = np.zeros(num_mc, dtype=float)
 
@@ -90,8 +90,10 @@ for k in range(num_mc):
 
     print(f'Objective Found: {objective}')
     print(f'Correct Objective: {correct_objective}')
-    print(f'Signs found: {signs_found}\n')
-    # print(f'Signs exact: {ula_signal.signs_exact}')
+    print(f'Signs found: {signs_found}')
+    print(f'Signs exact: {ula_signal.signs_exact}\n')
+    print(f'theta found: {thetas[k]/np.pi}')
+    print(f'theta exact: {theta/np.pi}')
     sign_overlap = sign_overlap + np.abs(np.dot(ula_signal.signs_exact, signs_found)) / len(signs_found) / num_mc
 
     # R = ula_signal.get_cov_matrix(theta, n_samples=ula_signal.n_samples, eta=eta)

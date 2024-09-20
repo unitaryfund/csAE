@@ -12,7 +12,7 @@ sns.despine(left=True, bottom=True)
 sns.set_context("poster", font_scale = .45, rc={"grid.linewidth": 0.8})
 
 # for sd in range(20):
-for sd in [12]:
+for sd in [19]:
     # For reproducibility
     np.random.seed(sd)
     # Set the per oracle noise parameter (See Eq. 18)

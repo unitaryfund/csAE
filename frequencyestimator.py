@@ -177,10 +177,14 @@ class ESPIRIT(EstimateFrequency):
         # print(self.w)
         
         # Fix the quadrant
-        if self.w[0] < 0.0:
-            w = np.abs(self.w[0])
-        else:
-            w = np.abs(np.pi/2.0 - np.abs(self.w[0]))
+        # if self.w[0] < 0.0:
+        #     w = np.abs(self.w[0])
+        # else:
+        #     w = np.abs(np.pi/2.0 - np.abs(self.w[0]))
+
+        w = np.abs(self.w[0])
+
+        # Fix pi/2 shifts that happen due to degeneracies in the signal space
         
         # Fix right around theta = 0 or pi/2
         if (np.abs(w) < 1/m) and (p0mp1 < -0.999999):

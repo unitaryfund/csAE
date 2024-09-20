@@ -10,7 +10,7 @@ P0x = lambda n, theta: (1.0 + np.sin(2*(2*n+1)*theta))/2.0
 P1x = lambda n, theta: (1.0 - np.sin(2*(2*n+1)*theta))/2.0
 
 @njit
-def get_ula_signal(q, idx, signal):
+def _get_ula_signal(q, idx, signal):
     p = np.outer(signal, np.conj(signal)).T.ravel()  # Compute outer product
     p = p[idx[0]]  # Restrict to indices
     cp = np.conj(p)
@@ -43,26 +43,31 @@ class TwoqULASignal(ULASignal):
             depths, n_samples = self._get_depths(self.M, C=C)
             self.depths = depths
             self.n_samples = n_samples
+            # self.depths = self._get_depths(self.M)
             self.q = len(self.M)//2 if len(self.M) % 2 == 0 else len(self.M)//2 + 1
             self.idx = self.get_idx()
+            self.signs_exact=None
+            self.signal = None
         elif isinstance(ula, str):
             with open(ula, 'rb') as handle:
-                self.idx, self.depths, self.n_samples, self.M = pickle.load(handle)
+                self.idx, self.depths, self.n_samples, self.M, self.signs_exact = pickle.load(handle)
             self.q = len(self.M)//2 if len(self.M) % 2 == 0 else len(self.M)//2 + 1
         else:
             raise TypeError("Input ULA must by array of indices or path to pickle file")
 
     def save_ula(self, filename='ula.pkl'):
         with open(filename, 'wb') as handle:
-            pickle.dump((self.idx, self.depths, self.n_samples, self.M), handle, protocol=pickle.HIGHEST_PROTOCOL)
+            pickle.dump((self.idx, self.depths, self.n_samples, self.M, self.signs_exact), handle, protocol=pickle.HIGHEST_PROTOCOL)
         
-    
+    def get_ula_signal(self, signal):
+        return _get_ula_signal(self.q, self.idx, signal)
+
     def get_cov_matrix(self, signal):
         '''
         This generates Eq. 13 in the paper DOI: 10.1109/DSP-SPE.2011.5739227 using the 
         technique from DOI:10.1109/LSP.2015.2409153
         '''
-        self.ULA_signal = self.get_ula_signal(self.q, self.idx, signal)
+        self.ULA_signal = _get_ula_signal(self.q, self.idx, signal)
         total_size = len(self.ULA_signal)
         ULA_signal = self.ULA_signal
 
@@ -85,7 +90,8 @@ class TwoqULASignal(ULASignal):
         This generates R tilde of DOI: 10.1109/LSP.2015.2409153 and only stores a column and row, which entirely 
         defines a Toeplitz matrix
         '''
-        self.ULA_signal = get_ula_signal(self.q, self.idx, signal)
+        print(f'signal[0] in get_cov: {np.real(signal[0])}')
+        self.ULA_signal = _get_ula_signal(self.q, self.idx, signal)
         total_size = len(self.ULA_signal)
         ULA_signal = self.ULA_signal
         
@@ -151,12 +157,32 @@ class TwoqULASignal(ULASignal):
         for i in range(len(physLoc)):
             x = int((np.ceil(C*(len(physLoc)-i)))) # sims_99
             n_samples.append(x if x!=0 else 1)
+            # n_samples.append(C)
 
         return physLoc, n_samples
+
+    def update_signal_signs(self, signs):
+        if len(signs) != len(self.signal):
+            print(f'Error: sign array of length {len(signs)} must be of same length as signal array of length {len(self.signal)}')
+            exit()
+
+        signed_signal = np.zeros(len(self.signal), dtype = np.complex128)
+        
+        for i in range(len(self.signal)):
+            if signs[i] < 0:
+                signed_signal[i] = np.conj(self.signal[i])
+            else:
+                signed_signal[i] = self.signal[i]
+
+        return signed_signal
     
-    def estimate_signal(self, n_samples, theta, eta=0.0):
+    def estimate_signal(self, n_samples, theta, eta=0.0, signs=None):
         depths = self.depths
-        signals = np.zeros(len(depths), dtype = np.complex128)
+        # print(self.depths)
+        self.signal = np.zeros(len(depths), dtype = np.complex128)
+        # print(depths)
+        # signs_local = [1]*len(self.depths)
+        self.signs_exact = [1]*len(self.depths)
         for i,n in enumerate(depths):
             # Get the exact measuremnt probabilities
             p0 = P0(n, theta)
@@ -169,18 +195,37 @@ class TwoqULASignal(ULASignal):
             eta_n = (1.0-eta)**(n+1) # The error at depth n increases as more queries are implemented
             p0_estimate = np.random.binomial(n_samples[i], eta_n*p0 + (1.0-eta_n)*0.5)/n_samples[i]
             p1_estimate = 1.0 - p0_estimate
-            p0x_estimate = np.random.binomial(n_samples[i], eta_n*p0x + (1.0-eta_n)*0.5)/n_samples[i]
-            p1x_estimate = 1.0 - p0x_estimate
+            # p0x_estimate = np.random.binomial(n_samples[i], eta_n*p0x + (1.0-eta_n)*0.5)/n_samples[i]
+            # p1x_estimate = 1.0 - p0x_estimate
+
+            theta_cos = 2*np.arccos(np.sqrt(p0_estimate))
+            theta_estimated = theta_cos
+
+            # Determine which quadrant to place theta estimated in
+            if signs:
+                if signs[i] < 0: 
+                    theta_estimated = -theta_cos
+    
+                # signs_local[i] = signs[i]
+
+
+            # else:
+            #     theta_estimated = 2*np.arctan2(np.sqrt(p1_estimate), np.sqrt(p0_estimate)) # always between 0 and pi/2
+                # print(f'theta_estimated: {theta_estimated/np.pi}')
+                
             
-            # Estimate theta
-            theta_estimated = np.arctan2(p0x_estimate - p1x_estimate, p0_estimate - p1_estimate)
+            # Estimate correct theta
+            # theta_estimated = np.arctan2(p0x_estimate - p1x_estimate, p0_estimate - p1_estimate)
+            theta_exact = np.arctan2(p0x - p1x, p0 - p1)
+            self.signs_exact[i] = np.sign(np.imag(np.exp(1.0j*theta_exact))) # Sign of the sine term
+            # print(f'theta_estimated_old: {theta_estimated_old/np.pi}\n')
             
             # Store this to determine angle at theta = 0 or pi/2
-            if i==0:
-                self.p0mp1 = p0_estimate - p1_estimate
+            # if i==0:
+            #     self.p0mp1 = p0_estimate - p1_estimate
 
             # Compute f(n) - Eq. 3
             fi_estimate = np.exp(1.0j*theta_estimated)
-            signals[i] = fi_estimate
+            self.signal[i] = fi_estimate
         
-        return signals    
+        return self.signal 

@@ -179,6 +179,7 @@ class TwoqULASignal(ULASignal):
         depths = self.depths
         # print(self.depths)
         self.signal = np.zeros(len(depths), dtype = np.complex128)
+        self.measurements = np.zeros(len(depths), dtype=np.double)
         # print(depths)
         # signs_local = [1]*len(self.depths)
         self.signs_exact = [1]*len(self.depths)
@@ -196,8 +197,10 @@ class TwoqULASignal(ULASignal):
             p1_estimate = 1.0 - p0_estimate
             # p0x_estimate = np.random.binomial(n_samples[i], eta_n*p0x + (1.0-eta_n)*0.5)/n_samples[i]
             # p1x_estimate = 1.0 - p0x_estimate
+            self.measurements[i] = p0_estimate
 
             theta_cos = 2*np.arccos(np.sqrt(p0_estimate))
+            # theta_cos = np.arccos(np.sqrt(p0_estimate))
             theta_estimated = theta_cos
 
             # Determine which quadrant to place theta estimated in
@@ -216,7 +219,7 @@ class TwoqULASignal(ULASignal):
             # Estimate correct theta
             # theta_estimated = np.arctan2(p0x_estimate - p1x_estimate, p0_estimate - p1_estimate)
             theta_exact = np.arctan2(p0x - p1x, p0 - p1)
-            self.signs_exact[i] = np.sign(np.imag(np.exp(1.0j*theta_exact))) # Sign of the sine term
+            self.signs_exact[i] = np.sign(np.imag(np.exp(1j * theta_exact)))  # Sign of the sine term
             # print(f'theta_estimated_old: {theta_estimated_old/np.pi}\n')
             
             # Store this to determine angle at theta = 0 or pi/2

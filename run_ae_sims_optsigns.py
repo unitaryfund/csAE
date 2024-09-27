@@ -27,7 +27,8 @@ warnings.simplefilter('ignore', category=NumbaDeprecationWarning)
 warnings.simplefilter('ignore', category=NumbaPendingDeprecationWarning)
 
 
-def run(theta, n_samples, ula_signal, espirit, n=2, eta=0.0):
+def run(theta, n_samples, ula_signal, espirit, eta=0.0, i=0):
+    np.random.seed(i)
     signal = ula_signal.estimate_signal(n_samples, theta, eta)
     all_signs = [s for s in itertools.product([1.0, -1.0], repeat=len(signal) - 1)]
     objective = -np.inf
@@ -41,8 +42,24 @@ def run(theta, n_samples, ula_signal, espirit, n=2, eta=0.0):
 
         if objective_new > objective:
             objective = objective_new
-            error = np.abs(np.sin(theta) - np.sin(theta_est))
-            theta = theta_est
+            theta_found = theta_est
+
+    obj_pi_02 = np.linalg.norm(ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (theta_found / 2.0)) ** 2)
+    obj_same = np.linalg.norm(ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (theta_found)) ** 2)
+    obj_pi_s2 = np.linalg.norm(
+        ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (np.pi / 2 - theta_found)) ** 2)
+    obj_pi_s4 = np.linalg.norm(
+        ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (np.pi / 4 - theta_found)) ** 2)
+
+    which_correction = np.argmin([obj_same, obj_pi_s2, obj_pi_s4, obj_pi_02])
+    if which_correction == 1:
+        theta_found = np.pi / 2.0 - theta_found
+    elif which_correction == 2:
+        theta_found = np.pi / 4.0 - theta_found
+    elif which_correction == 3:
+        theta_found =  0.5 * theta_found
+
+    error = np.abs(np.sin(theta) - np.sin(theta_found))
 
     return error, theta
 
@@ -130,7 +147,7 @@ if __name__ == "__main__":
 
             pool = multiprocessing.Pool(num_threads)
             start = time.time()
-            processes = [pool.apply_async(run, args=(theta, n_samples, ula_signal, espirit, 2, args.eta)) for _ in
+            processes = [pool.apply_async(run, args=(theta, n_samples, ula_signal, espirit, args.eta, i)) for i in
                          range(num_mc)]
             sims = [p.get() for p in processes]
             for k in range(num_mc):

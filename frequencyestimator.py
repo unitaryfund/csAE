@@ -144,10 +144,10 @@ class ESPIRIT(EstimateFrequency):
     def __init__(self):
         pass
     
-    def estimate_theta_toeplitz(self, R, n=2, p0mp1=1.0):
-        return self.estimate_theta(R, True, True, n=2, p0mp1=p0mp1)
+    def estimate_theta_toeplitz(self, R, n=2, p0mp1=1.0, s0=1.0):
+        return self.estimate_theta(R, True, True, n=2, p0mp1=p0mp1, s0=s0)
     
-    def estimate_theta(self, R, lanczos=False, lanczos_toeplitz=False, n=2, p0mp1=1.0):
+    def estimate_theta(self, R, lanczos=False, lanczos_toeplitz=False, n=2, p0mp1=1.0, s0=1.0):
 
         self.R = R
         if lanczos:   
@@ -168,29 +168,46 @@ class ESPIRIT(EstimateFrequency):
         S1 = np.matrix(self.S[0:-1, :], dtype=np.complex128)
         S2 = np.matrix(self.S[1:, :], dtype=np.complex128)
 
+        S1 = np.matrix(self.S[0:-1, 0], dtype=np.complex128)
+        S2 = np.matrix(self.S[1:, 0], dtype=np.complex128)
+
+        # print(S1)
+        # print(S2)
+
         Phi = np.linalg.pinv(S1) @ S2
 
         eigs, _ = np.linalg.eig(Phi)
 
         angle = -np.angle(eigs)
         self.w = np.array([angle[0]/4])
-        # print(self.w)
-        
+        # self.w = np.max(np.abs(angle))/4
+        # max_angle_idx = np.argmax(np.abs(angle))
+        # self.w = angle[max_angle_idx]/4
+        # self.w = np.sum(angle)/4
+
+        # w = self.w
+
+
         # Fix the quadrant
-        # if self.w[0] < 0.0:
-        #     w = np.abs(self.w[0])
+        # if (self.w < 0.0):
+        #     w = np.abs(self.w)
         # else:
-        #     w = np.abs(np.pi/2.0 - np.abs(self.w[0]))
+        #     w = np.abs(np.pi/2.0 - np.abs(self.w))
+
+        # if (s0 > 0.5):
+        #     w = np.abs(np.pi / 2.0 - np.abs(self.w[0]))
+        # else:
+        #     w = np.abs(self.w[0])
 
         w = np.abs(self.w[0])
 
         # Fix pi/2 shifts that happen due to degeneracies in the signal space
         
         # Fix right around theta = 0 or pi/2
-        if (np.abs(w) < 1/m) and (p0mp1 < -0.999999):
-            w = np.pi/2.0 + w
-
-        elif (np.abs(w-np.pi/2) < 1/m) and (p0mp1 > 0.999999):
-            w = np.abs(w-np.pi/2.0)
+        # if (np.abs(w) < 1/m) and (p0mp1 < -0.999999):
+        #     w = np.pi/2.0 + w
+        #
+        # elif (np.abs(w-np.pi/2) < 1/m) and (p0mp1 > 0.999999):
+        #     w = np.abs(w-np.pi/2.0)
 
         return w, eigs

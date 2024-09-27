@@ -20,31 +20,31 @@ narray = [2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
 q = 6
 narray = [2] * q
 narray = [2, 2, 2, 2, 2, 2]
+narray = [2, 2, 2, 2, 2, 2]
 # Set the actual amplitude
-a = 0.2
+a = 0.4
 theta = np.arcsin(a)
 
 # This sets up the simulation that simulates the measured amplitudes at the various physical locations.
 # It uses a C=1.5 value, which corresponds to the sampling schedule given in Eq. 16. The variable C here
 # is the parameter K in the paper.
-ula_signal = TwoqULASignal(M=narray, C=3.0)
+ula_signal = TwoqULASignal(M=narray, C=10.0)
 
 # Number of Monte Carlo trials used to estimate statistics. We tend to use 500 in the paper. Choose 100 here for speed.
-num_mc = 50
+num_mc = 10
 thetas = np.zeros(num_mc, dtype=float)
 errors = np.zeros(num_mc, dtype=float)
 
 # Sets up the ESPIRIT object to estimate the amplitude
 espirit = ESPIRIT()
 
-signs = [1] * (q + 1)
-signs[0] = 1
 sign_overlap = 0
-# signs = [1, 1, 1, -1, 1, 1]
-# signs = [1.0, 1.0, 1.0, -1.0, 1.0, 1.0]
 
 signal = ula_signal.estimate_signal(n_samples=ula_signal.n_samples, theta=theta, eta=eta)
 all_signs = [s for s in itertools.product([1.0, -1.0], repeat=len(signal)-1)]
+
+# all_signs = [[1.0]*(len(signal)-1)]
+# all_signs = [ula_signal.signs_exact[1:]]
 
 for k in range(num_mc):
     # This estimates the covariance matrix of Eq. 8 using the approch given in DOI:10.1109/LSP.2015.2409153
@@ -53,13 +53,16 @@ for k in range(num_mc):
     objective = -np.inf
 
     for signs in all_signs:
+    # for signs in [ula_signal.signs_exact[1:]]:
         signs = [1.0] + list(signs)
         # print(signs)
         # signal = ula_signal.estimate_signal(n_samples=ula_signal.n_samples, theta=theta, eta=eta, signs=signs)
         signal = ula_signal.update_signal_signs(signs)
         R = ula_signal.get_cov_matrix_toeplitz(signal)
         # This estimates the angle using the ESPIRIT algorithm
-        theta_est, eigs = espirit.estimate_theta_toeplitz(R)
+        theta_est, eigs = espirit.estimate_theta_toeplitz(R, s0=np.real(signal[0])**2)
+
+
         objective_new = np.abs(espirit.eigs[0]) - np.abs(espirit.eigs[1])
         # print(f'Objective: {objective}')
         if math.isclose(np.abs(np.dot(ula_signal.signs_exact, signs))/len(signs), 1):
@@ -76,28 +79,55 @@ for k in range(num_mc):
             # print(f'objective_new: {objective_new}')
             objective = objective_new
             signs_found = signs
+            print(f'angle {-np.angle(eigs) / np.pi / 4}')
+            # print(np.real(signal[0])**2)
+            # print(np.abs(np.imag(signal[0])))
+            # print(np.cos(2*theta_est)**2)
+            # print(np.abs(np.sin(2*theta_est)))
+            # if np.abs(np.real(signal[0])**2 - np.cos(2*theta_est)**2) > 0.25:
+            #     print('here')
+            #     theta_est = np.abs(np.pi / 2.0 - np.abs(theta_est))
+
 
             # Estimate the error between estimated a and actual a
             error = np.abs(np.sin(theta) - np.sin(theta_est))
             thetas[k] = theta_est
-            errors[k] = error
-            # print(theta_est)
-        # else:
-        #     signs[j + 1] = -1 * signs[j + 1]
-        #     signs_found = signs
 
-    # print('\n')
+    obj_pi_02 = np.linalg.norm(ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (thetas[k]/2.0)) ** 2)
+    obj_same = np.linalg.norm(ula_signal.measurements - np.cos((2*ula_signal.depths+1)*(thetas[k]))**2)
+    obj_pi_s2  = np.linalg.norm(ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (np.pi/2-thetas[k])) ** 2)
+    obj_pi_s4  = np.linalg.norm(ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (np.pi / 4 - thetas[k])) ** 2)
+    print(f'2*theta_found obj:         {obj_same}')
+    print(f'2*theta found:             {2*thetas[k] / np.pi}')
 
+    print(f'pi-2*theta_found obj:      {obj_pi_s2}')
+    print(f'pi-2*theta found:          {1.0-2 * thetas[k] / np.pi}')
+
+    print(f'pi/2-2*theta_found obj:    {obj_pi_s4}')
+    print(f'pi/2-2*theta found:        {0.5 - 2 * thetas[k] / np.pi}')
+
+    print(f'theta_found obj:           {obj_pi_02}')
+    print(f'theta found:               {thetas[k] / np.pi}')
+
+    print('FINAL ANGLE FOUND')
+    which_correction = np.argmin([obj_same, obj_pi_s2, obj_pi_s4, obj_pi_02])
+    if which_correction == 1:
+        thetas[k] = np.pi/2.0 - thetas[k]
+    elif which_correction == 2:
+        thetas[k] = np.pi/4.0 - thetas[k]
+    elif which_correction == 3:
+        thetas[k] = 0.5*thetas[k]
+
+    print(f'2*theta corrected:         {2*thetas[k] / np.pi}')
+    print(f'2*theta exact:             {2*theta / np.pi}')
     print(f'Objective Found: {objective}')
-    print(f'Correct Objective: {correct_objective}')
+    # print(f'Correct Objective: {correct_objective}')
     print(f'Signs found: {signs_found}')
     print(f'Signs exact: {ula_signal.signs_exact}\n')
-    print(f'theta found: {thetas[k]/np.pi}')
-    print(f'theta exact: {theta/np.pi}')
     sign_overlap = sign_overlap + np.abs(np.dot(ula_signal.signs_exact, signs_found)) / len(signs_found) / num_mc
 
-    # R = ula_signal.get_cov_matrix(theta, n_samples=ula_signal.n_samples, eta=eta)
-    # theta_est = espirit.estimate_theta(R)
+
+    errors[k] = np.abs(np.abs(np.sin(theta)) - np.abs(np.sin(thetas[k])))
 
 # Compute the total number of queries. The additional count of ula_signal.n_samples[0]/2 is to
 # account for the fact that the Grover oracle has two invocations of the unitary U, but is
@@ -131,4 +161,8 @@ ula_signal_found = ula_signal.get_ula_signal(signal)
 # plt.plot(np.real(ula_signal_exact))
 # plt.plot(np.real(ula_signal_found))
 # plt.plot(np.real(ula_signal_bad))
+# plt.plot(np.real(ula_signal.measurements))
+# plt.plot(np.cos((2*ula_signal.depths+1)*(thetas[k]))**2)
+# plt.plot(np.cos((2*ula_signal.depths+1)*(np.pi/2-thetas[k]))**2)
+# plt.plot(np.cos((2*ula_signal.depths+1)*(np.pi/4-thetas[k]))**2)
 # plt.show()

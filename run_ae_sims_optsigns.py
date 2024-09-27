@@ -126,7 +126,7 @@ if __name__ == "__main__":
 
             espirit = ESPIRIT()
             narray = [2] * (2 * r + 2)
-            narray[0] = 3
+            narray[-1] = 3
             arrays.append(narray)
             print(f'Array parameters: {narray}')
             ula_signal = TwoqULASignal(M=narray, C=args.C)

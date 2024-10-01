@@ -108,27 +108,27 @@ for k in range(num_mc):
     # obj_s2_o2 = np.linalg.norm(ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (np.pi / 2 - thetas[k]/2)) ** 2)
     # obj_s4_o2 = np.linalg.norm(ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (np.pi / 4 - thetas[k]/2)) ** 2)
     l_o2 = np.sum(
-        np.log([binom.pmf(ula_signal.n_samples[kk]*ula_signal.measurements[kk], ula_signal.n_samples[kk], p_o2[kk]) for kk in
+        np.log([1e-75+binom.pmf(ula_signal.n_samples[kk]*ula_signal.measurements[kk], ula_signal.n_samples[kk], p_o2[kk]) for kk in
          range(len(ula_signal.n_samples))]))
     l_o4 = np.sum(
-        np.log([binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_o4[kk]) for kk in
+        np.log([1e-75+binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_o4[kk]) for kk in
          range(len(ula_signal.n_samples))]))
     l_same = np.sum(
-        np.log([binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_same[kk]) for kk in
+        np.log([1e-75+binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_same[kk]) for kk in
          range(len(ula_signal.n_samples))]))
-    print([binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_same[kk]) for kk in
+    print([1e-75+binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_same[kk]) for kk in
          range(len(ula_signal.n_samples))])
     l_s2 = np.sum(
-        np.log([binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s2[kk]) for kk in
+        np.log([1e-75+binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s2[kk]) for kk in
          range(len(ula_signal.n_samples))]))
     l_s4 = np.sum(
-        np.log([binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s4[kk]) for kk in
+        np.log([1e-75+binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s4[kk]) for kk in
          range(len(ula_signal.n_samples))]))
     l_s2_o2 = np.sum(
-        np.log([binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s2_o2[kk]) for kk in
+        np.log([1e-75+binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s2_o2[kk]) for kk in
          range(len(ula_signal.n_samples))]))
     l_s4_o2 = np.sum(
-        np.log([binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s4_o2[kk]) for kk in
+        np.log([1e-75+binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s4_o2[kk]) for kk in
          range(len(ula_signal.n_samples))]))
 
     print(f'2*theta_found obj:         {l_same}')

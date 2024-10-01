@@ -61,35 +61,35 @@ def run(theta, n_samples, ula_signal, espirit, eta=0.0, i=0):
 
     l_o2 = np.sum(
         np.log(
-            [binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_o2[kk]) for
+            [1e-75+binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_o2[kk]) for
              kk in
              range(len(ula_signal.n_samples))]))
     l_o4 = np.sum(
         np.log(
-            [binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_o4[kk]) for
+            [1e-75+binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_o4[kk]) for
              kk in
              range(len(ula_signal.n_samples))]))
     l_same = np.sum(
         np.log(
-            [binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_same[kk]) for
+            [1e-75+binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_same[kk]) for
              kk in
              range(len(ula_signal.n_samples))]))
     l_s2 = np.sum(
         np.log(
-            [binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s2[kk]) for
+            [1e-75+binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s2[kk]) for
              kk in
              range(len(ula_signal.n_samples))]))
     l_s4 = np.sum(
         np.log(
-            [binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s4[kk]) for
+            [1e-75+binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s4[kk]) for
              kk in
              range(len(ula_signal.n_samples))]))
     l_s2_o2 = np.sum(
-        np.log([binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s2_o2[kk])
+        np.log([1e-75+binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s2_o2[kk])
                 for kk in
                 range(len(ula_signal.n_samples))]))
     l_s4_o2 = np.sum(
-        np.log([binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s4_o2[kk])
+        np.log([1e-75+binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s4_o2[kk])
                 for kk in
                 range(len(ula_signal.n_samples))]))
 

@@ -19,6 +19,7 @@ import pickle
 import argparse
 import pathlib
 import itertools
+from scipy.stats import binom
 
 from numba.core.errors import NumbaDeprecationWarning, NumbaPendingDeprecationWarning
 import warnings
@@ -44,20 +45,70 @@ def run(theta, n_samples, ula_signal, espirit, eta=0.0, i=0):
             objective = objective_new
             theta_found = theta_est
 
-    obj_pi_02 = np.linalg.norm(ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (theta_found / 2.0)) ** 2)
-    obj_same = np.linalg.norm(ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (theta_found)) ** 2)
-    obj_pi_s2 = np.linalg.norm(
-        ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (np.pi / 2 - theta_found)) ** 2)
-    obj_pi_s4 = np.linalg.norm(
-        ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (np.pi / 4 - theta_found)) ** 2)
+    p_o2 = np.cos((2 * ula_signal.depths + 1) * (theta_found / 2.0)) ** 2
+    p_o4 = np.cos((2 * ula_signal.depths + 1) * (theta_found / 4.0)) ** 2
+    p_same = np.cos((2 * ula_signal.depths + 1) * (theta_found)) ** 2
+    p_s2 = np.cos((2 * ula_signal.depths + 1) * (np.pi / 2 - theta_found)) ** 2
+    p_s4 = np.cos((2 * ula_signal.depths + 1) * (np.pi / 4 - theta_found)) ** 2
+    p_s2_o2 = np.cos((2 * ula_signal.depths + 1) * (np.pi / 2 - theta_found / 2)) ** 2
+    p_s4_o2 = np.cos((2 * ula_signal.depths + 1) * (np.pi / 4 - theta_found/ 2)) ** 2
+    # obj_o2 = np.linalg.norm(ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (thetas[k]/2.0)) ** 2)
+    # obj_same = np.linalg.norm(ula_signal.measurements - np.cos((2*ula_signal.depths+1)*(thetas[k]))**2)
+    # obj_s2  = np.linalg.norm(ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (np.pi/2-thetas[k])) ** 2)
+    # obj_s4  = np.linalg.norm(ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (np.pi / 4 - thetas[k])) ** 2)
+    # obj_s2_o2 = np.linalg.norm(ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (np.pi / 2 - thetas[k]/2)) ** 2)
+    # obj_s4_o2 = np.linalg.norm(ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (np.pi / 4 - thetas[k]/2)) ** 2)
 
-    which_correction = np.argmin([obj_same, obj_pi_s2, obj_pi_s4, obj_pi_02])
+    l_o2 = np.sum(
+        np.log(
+            [binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_o2[kk]) for
+             kk in
+             range(len(ula_signal.n_samples))]))
+    l_o4 = np.sum(
+        np.log(
+            [binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_o4[kk]) for
+             kk in
+             range(len(ula_signal.n_samples))]))
+    l_same = np.sum(
+        np.log(
+            [binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_same[kk]) for
+             kk in
+             range(len(ula_signal.n_samples))]))
+    l_s2 = np.sum(
+        np.log(
+            [binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s2[kk]) for
+             kk in
+             range(len(ula_signal.n_samples))]))
+    l_s4 = np.sum(
+        np.log(
+            [binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s4[kk]) for
+             kk in
+             range(len(ula_signal.n_samples))]))
+    l_s2_o2 = np.sum(
+        np.log([binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s2_o2[kk])
+                for kk in
+                range(len(ula_signal.n_samples))]))
+    l_s4_o2 = np.sum(
+        np.log([binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s4_o2[kk])
+                for kk in
+                range(len(ula_signal.n_samples))]))
+
+
+    # which_correction = np.argmin([obj_same, obj_s2, obj_s4, obj_o2, obj_s2_o2, obj_s4_o2])
+    which_correction = np.argmax([l_same, l_s2, l_s4, l_o2, l_o4, l_s2_o2, l_s4_o2])
     if which_correction == 1:
         theta_found = np.pi / 2.0 - theta_found
     elif which_correction == 2:
         theta_found = np.pi / 4.0 - theta_found
     elif which_correction == 3:
         theta_found =  0.5 * theta_found
+    elif which_correction == 4:
+        theta_found =  0.25 * theta_found
+    elif which_correction == 5:
+        theta_found = np.pi / 2.0 - 0.5 * theta_found
+    elif which_correction == 6:
+        theta_found = np.pi / 4.0 - 0.5 * theta_found
+
 
     error = np.abs(np.sin(theta) - np.sin(theta_found))
 

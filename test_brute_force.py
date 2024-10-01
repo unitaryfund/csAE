@@ -5,6 +5,7 @@ from signals import *
 from frequencyestimator import *
 import itertools
 import math
+from scipy.stats import binom
 
 sns.set_style("whitegrid")
 sns.despine(left=True, bottom=True)
@@ -20,18 +21,18 @@ narray = [2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
 q = 6
 narray = [2] * q
 narray = [2, 2, 2, 2, 2, 2]
-narray = [2, 2, 2, 2, 2, 2]
+narray = [2, 2, 2, 2, 2, 3]
 # Set the actual amplitude
-a = 0.4
+a = 0.2
 theta = np.arcsin(a)
 
 # This sets up the simulation that simulates the measured amplitudes at the various physical locations.
 # It uses a C=1.5 value, which corresponds to the sampling schedule given in Eq. 16. The variable C here
 # is the parameter K in the paper.
-ula_signal = TwoqULASignal(M=narray, C=10.0)
+ula_signal = TwoqULASignal(M=narray, C=5.0)
 
 # Number of Monte Carlo trials used to estimate statistics. We tend to use 500 in the paper. Choose 100 here for speed.
-num_mc = 10
+num_mc = 20
 thetas = np.zeros(num_mc, dtype=float)
 errors = np.zeros(num_mc, dtype=float)
 
@@ -43,7 +44,7 @@ sign_overlap = 0
 signal = ula_signal.estimate_signal(n_samples=ula_signal.n_samples, theta=theta, eta=eta)
 all_signs = [s for s in itertools.product([1.0, -1.0], repeat=len(signal)-1)]
 
-# all_signs = [[1.0]*(len(signal)-1)]
+all_signs = [[1.0]*(len(signal)-1)]
 # all_signs = [ula_signal.signs_exact[1:]]
 
 for k in range(num_mc):
@@ -93,30 +94,78 @@ for k in range(num_mc):
             error = np.abs(np.sin(theta) - np.sin(theta_est))
             thetas[k] = theta_est
 
-    obj_pi_02 = np.linalg.norm(ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (thetas[k]/2.0)) ** 2)
-    obj_same = np.linalg.norm(ula_signal.measurements - np.cos((2*ula_signal.depths+1)*(thetas[k]))**2)
-    obj_pi_s2  = np.linalg.norm(ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (np.pi/2-thetas[k])) ** 2)
-    obj_pi_s4  = np.linalg.norm(ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (np.pi / 4 - thetas[k])) ** 2)
-    print(f'2*theta_found obj:         {obj_same}')
-    print(f'2*theta found:             {2*thetas[k] / np.pi}')
+    p_o2 = np.cos((2 * ula_signal.depths + 1) * (thetas[k]/2.0)) ** 2
+    p_o4 = np.cos((2 * ula_signal.depths + 1) * (thetas[k] / 4.0)) ** 2
+    p_same = np.cos((2*ula_signal.depths+1)*(thetas[k]))**2
+    p_s2 = np.cos((2 * ula_signal.depths + 1) * (np.pi/2-thetas[k])) ** 2
+    p_s4 = np.cos((2 * ula_signal.depths + 1) * (np.pi / 4 - thetas[k])) ** 2
+    p_s2_o2 = np.cos((2 * ula_signal.depths + 1) * (np.pi / 2 - thetas[k]/2)) ** 2
+    p_s4_o2 = np.cos((2 * ula_signal.depths + 1) * (np.pi / 4 - thetas[k]/2)) ** 2
+    # obj_o2 = np.linalg.norm(ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (thetas[k]/2.0)) ** 2)
+    # obj_same = np.linalg.norm(ula_signal.measurements - np.cos((2*ula_signal.depths+1)*(thetas[k]))**2)
+    # obj_s2  = np.linalg.norm(ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (np.pi/2-thetas[k])) ** 2)
+    # obj_s4  = np.linalg.norm(ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (np.pi / 4 - thetas[k])) ** 2)
+    # obj_s2_o2 = np.linalg.norm(ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (np.pi / 2 - thetas[k]/2)) ** 2)
+    # obj_s4_o2 = np.linalg.norm(ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (np.pi / 4 - thetas[k]/2)) ** 2)
+    l_o2 = np.sum(
+        np.log([binom.pmf(ula_signal.n_samples[kk]*ula_signal.measurements[kk], ula_signal.n_samples[kk], p_o2[kk]) for kk in
+         range(len(ula_signal.n_samples))]))
+    l_o4 = np.sum(
+        np.log([binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_o4[kk]) for kk in
+         range(len(ula_signal.n_samples))]))
+    l_same = np.sum(
+        np.log([binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_same[kk]) for kk in
+         range(len(ula_signal.n_samples))]))
+    print([binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_same[kk]) for kk in
+         range(len(ula_signal.n_samples))])
+    l_s2 = np.sum(
+        np.log([binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s2[kk]) for kk in
+         range(len(ula_signal.n_samples))]))
+    l_s4 = np.sum(
+        np.log([binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s4[kk]) for kk in
+         range(len(ula_signal.n_samples))]))
+    l_s2_o2 = np.sum(
+        np.log([binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s2_o2[kk]) for kk in
+         range(len(ula_signal.n_samples))]))
+    l_s4_o2 = np.sum(
+        np.log([binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s4_o2[kk]) for kk in
+         range(len(ula_signal.n_samples))]))
 
-    print(f'pi-2*theta_found obj:      {obj_pi_s2}')
-    print(f'pi-2*theta found:          {1.0-2 * thetas[k] / np.pi}')
+    print(f'2*theta_found obj:         {l_same}')
+    print(f'2*theta found:             {2*thetas[k] / np.pi}\n')
 
-    print(f'pi/2-2*theta_found obj:    {obj_pi_s4}')
-    print(f'pi/2-2*theta found:        {0.5 - 2 * thetas[k] / np.pi}')
+    print(f'pi-2*theta_found obj:      {l_s2}')
+    print(f'pi-2*theta found:          {1.0-2 * thetas[k] / np.pi}\n')
 
-    print(f'theta_found obj:           {obj_pi_02}')
-    print(f'theta found:               {thetas[k] / np.pi}')
+    print(f'pi/2-2*theta_found obj:    {l_s4}')
+    print(f'pi/2-2*theta found:        {0.5 - 2 * thetas[k] / np.pi}\n')
+
+    print(f'theta_found obj:           {l_o2}')
+    print(f'theta found:               {thetas[k] / np.pi}\n')
+
+    print(f'theta_found/2 obj:         {l_o4}')
+    print(f'theta found:               {thetas[k] / 2.0 / np.pi}\n')
+
+    print(f'pi - theta_found obj:    {l_s2_o2}')
+    print(f'pi - theta found:        {1.0 - thetas[k] / np.pi}\n')
+
+    print(f'pi/2 - theta_found obj:    {l_s4_o2}')
+    print(f'pi/2 - theta found:        {0.5 - thetas[k] / np.pi}\n')
 
     print('FINAL ANGLE FOUND')
-    which_correction = np.argmin([obj_same, obj_pi_s2, obj_pi_s4, obj_pi_02])
+    which_correction = np.argmax([l_same, l_s2, l_s4, l_o2, l_o4, l_s2_o2, l_s4_o2])
     if which_correction == 1:
         thetas[k] = np.pi/2.0 - thetas[k]
     elif which_correction == 2:
         thetas[k] = np.pi/4.0 - thetas[k]
     elif which_correction == 3:
         thetas[k] = 0.5*thetas[k]
+    elif which_correction == 4:
+        thetas[k] = 0.25*thetas[k]
+    elif which_correction == 5:
+        thetas[k] = np.pi / 2.0 - 0.5 * thetas[k]
+    elif which_correction == 6:
+        thetas[k] = np.pi / 4.0 - 0.5 * thetas[k]
 
     print(f'2*theta corrected:         {2*thetas[k] / np.pi}')
     print(f'2*theta exact:             {2*theta / np.pi}')

@@ -136,6 +136,7 @@ if __name__ == "__main__":
     parser.add_argument('--C', type=float,
                         help="This is a free parameter that determines how many shots to take at each step. (default=3)",
                         default=3)
+    parser.add_argument('--no_opt', action='store_true', help="If set, this uses the exact signs and doe not optimize. (default=False)")
     args = parser.parse_args()
 
     print('Command Line Arguments')

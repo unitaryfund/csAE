@@ -28,11 +28,15 @@ warnings.simplefilter('ignore', category=NumbaDeprecationWarning)
 warnings.simplefilter('ignore', category=NumbaPendingDeprecationWarning)
 
 
-def run(theta, n_samples, ula_signal, espirit, eta=0.0, i=0):
+def run(theta, n_samples, ula_signal, espirit, eta=0.0, i=0, no_opt=False):
     np.random.seed(i)
     signal = ula_signal.estimate_signal(n_samples, theta, eta)
-    all_signs = [s for s in itertools.product([1.0, -1.0], repeat=len(signal) - 1)]
     objective = -np.inf
+
+    if no_opt:
+        all_signs = [ula_signal.signs_exact[1:]]
+    else:
+        all_signs = [s for s in itertools.product([1.0, -1.0], repeat=len(signal) - 1)]
 
     for signs in all_signs:
         signs = [1.0] + list(signs)
@@ -199,7 +203,7 @@ if __name__ == "__main__":
 
             pool = multiprocessing.Pool(num_threads)
             start = time.time()
-            processes = [pool.apply_async(run, args=(theta, n_samples, ula_signal, espirit, args.eta, i)) for i in
+            processes = [pool.apply_async(run, args=(theta, n_samples, ula_signal, espirit, args.eta, i, args.no_opt)) for i in
                          range(num_mc)]
             sims = [p.get() for p in processes]
             for k in range(num_mc):

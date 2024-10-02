@@ -21,7 +21,7 @@ narray = [2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
 q = 6
 narray = [2] * q
 narray = [2, 2, 2, 2, 2, 2]
-narray = [2, 2, 2, 2, 2, 3]
+narray = [2, 2, 2, 2, 2, 2]
 # Set the actual amplitude
 a = 0.2
 theta = np.arcsin(a)
@@ -44,10 +44,11 @@ sign_overlap = 0
 signal = ula_signal.estimate_signal(n_samples=ula_signal.n_samples, theta=theta, eta=eta)
 all_signs = [s for s in itertools.product([1.0, -1.0], repeat=len(signal)-1)]
 
-all_signs = [[1.0]*(len(signal)-1)]
+# all_signs = [[1.0]*(len(signal)-1)]
 # all_signs = [ula_signal.signs_exact[1:]]
 
 for k in range(num_mc):
+    print(f'Trial {k+1} of {num_mc}')
     # This estimates the covariance matrix of Eq. 8 using the approch given in DOI:10.1109/LSP.2015.2409153
 
     ula_signal.estimate_signal(n_samples=ula_signal.n_samples, theta=theta, eta=eta)
@@ -66,8 +67,9 @@ for k in range(num_mc):
 
         objective_new = np.abs(espirit.eigs[0]) - np.abs(espirit.eigs[1])
         # print(f'Objective: {objective}')
-        if math.isclose(np.abs(np.dot(ula_signal.signs_exact, signs))/len(signs), 1):
-            # print('CORRECT ANSWER')
+        if math.isclose(np.linalg.norm(np.array(ula_signal.signs_exact) - np.array(signs)), 0):
+            print(f'     CORRECT ANSWER')
+            print(f'     angle {-np.angle(eigs) / np.pi / 4}; objective {objective_new}')
             correct_objective = objective_new
         # print(f'Objective New: {objective_new}')
         # print(f'Signs Exact: {ula_signal.signs_exact}')
@@ -80,7 +82,7 @@ for k in range(num_mc):
             # print(f'objective_new: {objective_new}')
             objective = objective_new
             signs_found = signs
-            print(f'angle {-np.angle(eigs) / np.pi / 4}')
+            print(f'angle {-np.angle(eigs) / np.pi / 4}; objective {objective}')
             # print(np.real(signal[0])**2)
             # print(np.abs(np.imag(signal[0])))
             # print(np.cos(2*theta_est)**2)
@@ -94,6 +96,7 @@ for k in range(num_mc):
             error = np.abs(np.sin(theta) - np.sin(theta_est))
             thetas[k] = theta_est
 
+    p_exact = np.cos((2*ula_signal.depths+1)*(theta))**2
     p_o2 = np.cos((2 * ula_signal.depths + 1) * (thetas[k]/2.0)) ** 2
     p_o4 = np.cos((2 * ula_signal.depths + 1) * (thetas[k] / 4.0)) ** 2
     p_same = np.cos((2*ula_signal.depths+1)*(thetas[k]))**2
@@ -107,6 +110,11 @@ for k in range(num_mc):
     # obj_s4  = np.linalg.norm(ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (np.pi / 4 - thetas[k])) ** 2)
     # obj_s2_o2 = np.linalg.norm(ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (np.pi / 2 - thetas[k]/2)) ** 2)
     # obj_s4_o2 = np.linalg.norm(ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (np.pi / 4 - thetas[k]/2)) ** 2)
+    l_exact = np.sum(
+        np.log([1e-75 + binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk],
+                                  p_exact[kk]) for kk in
+                range(len(ula_signal.n_samples))]))
+
     l_o2 = np.sum(
         np.log([1e-75+binom.pmf(ula_signal.n_samples[kk]*ula_signal.measurements[kk], ula_signal.n_samples[kk], p_o2[kk]) for kk in
          range(len(ula_signal.n_samples))]))
@@ -116,8 +124,6 @@ for k in range(num_mc):
     l_same = np.sum(
         np.log([1e-75+binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_same[kk]) for kk in
          range(len(ula_signal.n_samples))]))
-    print([1e-75+binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_same[kk]) for kk in
-         range(len(ula_signal.n_samples))])
     l_s2 = np.sum(
         np.log([1e-75+binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s2[kk]) for kk in
          range(len(ula_signal.n_samples))]))
@@ -130,6 +136,7 @@ for k in range(num_mc):
     l_s4_o2 = np.sum(
         np.log([1e-75+binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s4_o2[kk]) for kk in
          range(len(ula_signal.n_samples))]))
+    print(f'theta_exact obj:           {l_exact}\n')
 
     print(f'2*theta_found obj:         {l_same}')
     print(f'2*theta found:             {2*thetas[k] / np.pi}\n')

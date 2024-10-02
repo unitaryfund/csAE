@@ -150,8 +150,7 @@ class TwoqULASignal(ULASignal):
             c = int(np.prod(narray[:i]))
             for j in range(m):
                 physLoc.append(j*c)
-        # physLoc.append(3)
-        physLoc.append(physLoc[-1] - 2)
+
         physLoc = np.sort(list(set(physLoc)))
 
 

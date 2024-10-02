@@ -12,7 +12,8 @@ sns.despine(left=True, bottom=True)
 sns.set_context("poster", font_scale = .45, rc={"grid.linewidth": 0.8})
 
 # For reproducibility
-np.random.seed(8)
+#22, 26
+np.random.seed(14)
 # Set the per oracle noise parameter (See Eq. 18)
 eta = 0
 # Set the array parameters (See Thm. II.2 and Eq. 12)
@@ -21,7 +22,7 @@ narray = [2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
 q = 6
 narray = [2] * q
 narray = [2, 2, 2, 2, 2, 2]
-narray = [2, 2, 2, 2, 2, 2]
+narray = [2, 2, 2, 2, 2, 3]
 # Set the actual amplitude
 a = 0.2
 theta = np.arcsin(a)
@@ -32,7 +33,7 @@ theta = np.arcsin(a)
 ula_signal = TwoqULASignal(M=narray, C=5.0)
 
 # Number of Monte Carlo trials used to estimate statistics. We tend to use 500 in the paper. Choose 100 here for speed.
-num_mc = 20
+num_mc = 1
 thetas = np.zeros(num_mc, dtype=float)
 errors = np.zeros(num_mc, dtype=float)
 

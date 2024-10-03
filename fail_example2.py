@@ -97,7 +97,8 @@ for k in range(num_mc):
             error = np.abs(np.sin(theta) - np.sin(theta_est))
             thetas[k] = theta_est
 
-    p_exact = np.cos((2*ula_signal.depths+1)*(theta))**2
+    p_exact = np.cos((2*ula_signal.depths+1)*(0.06464824*np.pi))**2
+    # p_exact = np.cos((2 * ula_signal.depths + 1) * (theta)) ** 2
     p_o2 = np.cos((2 * ula_signal.depths + 1) * (thetas[k]/2.0)) ** 2
     p_o4 = np.cos((2 * ula_signal.depths + 1) * (thetas[k] / 4.0)) ** 2
     p_same = np.cos((2*ula_signal.depths+1)*(thetas[k]))**2
@@ -105,6 +106,8 @@ for k in range(num_mc):
     p_s4 = np.cos((2 * ula_signal.depths + 1) * (np.pi / 4 - thetas[k])) ** 2
     p_s2_o2 = np.cos((2 * ula_signal.depths + 1) * (np.pi / 2 - thetas[k]/2)) ** 2
     p_s4_o2 = np.cos((2 * ula_signal.depths + 1) * (np.pi / 4 - thetas[k]/2)) ** 2
+    p_s8 = np.cos((2 * ula_signal.depths + 1) * (np.pi / 8 - thetas[k])) ** 2
+    p_s16 = np.cos((2 * ula_signal.depths + 1) * (np.pi / 16 - thetas[k])) ** 2
     # obj_o2 = np.linalg.norm(ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (thetas[k]/2.0)) ** 2)
     # obj_same = np.linalg.norm(ula_signal.measurements - np.cos((2*ula_signal.depths+1)*(thetas[k]))**2)
     # obj_s2  = np.linalg.norm(ula_signal.measurements - np.cos((2 * ula_signal.depths + 1) * (np.pi/2-thetas[k])) ** 2)
@@ -131,11 +134,11 @@ for k in range(num_mc):
     l_s4 = np.sum(
         np.log([1e-75+binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s4[kk]) for kk in
          range(len(ula_signal.n_samples))]))
-    l_s2_o2 = np.sum(
-        np.log([1e-75+binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s2_o2[kk]) for kk in
+    l_s8 = np.sum(
+        np.log([1e-75+binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s8[kk]) for kk in
          range(len(ula_signal.n_samples))]))
-    l_s4_o2 = np.sum(
-        np.log([1e-75+binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s4_o2[kk]) for kk in
+    l_s16 = np.sum(
+        np.log([1e-75+binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_s16[kk]) for kk in
          range(len(ula_signal.n_samples))]))
     print(f'theta_exact obj:           {l_exact}\n')
 
@@ -148,20 +151,20 @@ for k in range(num_mc):
     print(f'pi/2-2*theta_found obj:    {l_s4}')
     print(f'pi/2-2*theta found:        {0.5 - 2 * thetas[k] / np.pi}\n')
 
+    print(f'pi/4-2*theta_found obj:    {l_s8}')
+    print(f'pi/4-2*theta found:        {0.25 - 2 * thetas[k] / np.pi}\n')
+
+    print(f'pi/8-2*theta_found obj:    {l_s16}')
+    print(f'pi/8-2*theta found:        {0.125 - 2 * thetas[k] / np.pi}\n')
+
     print(f'theta_found obj:           {l_o2}')
     print(f'theta found:               {thetas[k] / np.pi}\n')
 
     print(f'theta_found/2 obj:         {l_o4}')
     print(f'theta found:               {thetas[k] / 2.0 / np.pi}\n')
 
-    print(f'pi - theta_found obj:    {l_s2_o2}')
-    print(f'pi - theta found:        {1.0 - thetas[k] / np.pi}\n')
-
-    print(f'pi/2 - theta_found obj:    {l_s4_o2}')
-    print(f'pi/2 - theta found:        {0.5 - thetas[k] / np.pi}\n')
-
     print('FINAL ANGLE FOUND')
-    which_correction = np.argmax([l_same, l_s2, l_s4, l_o2, l_o4, l_s2_o2, l_s4_o2])
+    which_correction = np.argmax([l_same, l_s2, l_s4, l_o2, l_o4, l_s8, l_s16])
     if which_correction == 1:
         thetas[k] = np.pi/2.0 - thetas[k]
     elif which_correction == 2:
@@ -171,9 +174,9 @@ for k in range(num_mc):
     elif which_correction == 4:
         thetas[k] = 0.25*thetas[k]
     elif which_correction == 5:
-        thetas[k] = np.pi / 2.0 - 0.5 * thetas[k]
+        thetas[k] = np.pi / 8.0 - thetas[k]
     elif which_correction == 6:
-        thetas[k] = np.pi / 4.0 - 0.5 * thetas[k]
+        thetas[k] = np.pi / 16.0 - thetas[k]
 
     print(f'2*theta corrected:         {2*thetas[k] / np.pi}')
     print(f'2*theta exact:             {2*theta / np.pi}')
@@ -208,18 +211,34 @@ print(f'99% percentile constant: {np.percentile(errors, 99) * num_queries:f}')
 print(f'95% percentile constant: {np.percentile(errors, 95) * num_queries:f}')
 print(f'68% percentile constant: {np.percentile(errors, 68) * num_queries:f}')
 print()
+plt.close('all')
 
 signal = ula_signal.update_signal_signs(ula_signal.signs_exact)
 ula_signal_exact = ula_signal.get_ula_signal(signal)
 signal = ula_signal.update_signal_signs(signs_found)
 ula_signal_found = ula_signal.get_ula_signal(signal)
+signal = ula_signal.update_signal_signs([1]*len(signs_found))
+ula_signal_ones= ula_signal.get_ula_signal(signal)
 # signal = ula_signal.update_signal_signs([1.0, -1.0, -1.0, -1.0, 1.0, -1.0, -1.0])
 # ula_signal_bad = ula_signal.get_ula_signal(signal)
-# plt.plot(np.real(ula_signal_exact))
-# plt.plot(np.real(ula_signal_found))
+plt.plot(np.real(ula_signal_exact), linewidth=1)
+plt.plot(np.real(ula_signal_found), linewidth=1)
+# plt.plot(np.cos(np.pi-3.9*0.06464824*np.pi*np.arange(len(ula_signal_exact))))
+plt.plot(np.cos(np.pi-4*0.05923209*np.pi*np.arange(len(ula_signal_exact))))
+
+plt.xlim([0,100])
+plt.show()
 # plt.plot(np.real(ula_signal_bad))
-# plt.plot(np.real(ula_signal.measurements))
-# plt.plot(np.cos((2*ula_signal.depths+1)*(thetas[k]))**2)
+plt.plot(np.real(ula_signal.measurements))
+plt.plot(np.cos((2*ula_signal.depths+1)*(theta))**2, 'x')
+plt.plot(np.cos((2*ula_signal.depths+1)*(thetas[0]))**2, 'o')
+plt.plot(np.cos((2*ula_signal.depths+1)*(0.06464824*np.pi))**2, '.')
 # plt.plot(np.cos((2*ula_signal.depths+1)*(np.pi/2-thetas[k]))**2)
 # plt.plot(np.cos((2*ula_signal.depths+1)*(np.pi/4-thetas[k]))**2)
-# plt.show()
+plt.show()
+plt.plot(np.abs(np.fft.fft(ula_signal_exact)))
+plt.plot(np.abs(np.fft.fft(ula_signal_found)))
+plt.plot(np.abs(np.fft.fft(ula_signal_ones)))
+plt.show()
+theta_fft = np.pi*np.argmax(np.abs(np.fft.fft(ula_signal_found)))/len(ula_signal_found)/2
+print(theta_fft)

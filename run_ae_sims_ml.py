@@ -20,7 +20,7 @@ import pickle
 import argparse
 import pathlib
 import torch
-torch.set_num_threads(24)
+torch.set_num_threads(1)
 from scipy.stats import binom
 from ml_optsigns import SignModel
 
@@ -189,13 +189,14 @@ if __name__ == "__main__":
             sign_model = SignModel(input_features=len(narray) + 2,
                                    output_features=len(narray) + 1,
                                    hidden_units=128).to('cpu')
-            sign_model.share_memory()
+            # sign_model.share_memory()
 
             file_subscript = ''
             for x in narray:
                 file_subscript += f'{x}'
             sign_model.load_state_dict(torch.load("ml_models/sign_model_" + file_subscript + ".pt", weights_only=True))
             sign_model.eval()
+            sign_model.share_memory()
 
             arrays.append(narray)
             print(f'Array parameters: {narray}')

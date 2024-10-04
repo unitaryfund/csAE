@@ -11,7 +11,7 @@ def accuracy_fn(y_true, y_pred):
     return acc
 
 
-narray = [2, 3]
+narray = [2, 2, 2, 2, 2, 3]
 NUM_FEATURES = len(narray)+2
 NUM_CLASSES = len(narray)+1
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -34,21 +34,38 @@ class SignModel(nn.Module):
             nn.Linear(in_features=hidden_units, out_features=hidden_units),
             nn.ReLU(),
             nn.Linear(in_features=hidden_units, out_features=output_features),  # how many classes are there?
-            # nn.Linear(in_features=input_features, out_features=hidden_units),
-            # nn.Dropout(p=0.5),
-            # nn.ReLU(),
-            # # nn.Linear(in_features=hidden_units, out_features=hidden_units),
-            # # nn.Dropout(p=0.1),
-            # # nn.ReLU(),
-            # nn.Linear(in_features=hidden_units, out_features=hidden_units),
-            # nn.ReLU(),
-            # nn.Linear(in_features=hidden_units, out_features=output_features),  # how many classes are there?
-
         )
 
     def forward(self, x):
         return self.linear_layer_stack(x)
 
+class SignModelDeep(nn.Module):
+    def __init__(self, input_features, output_features, hidden_units=8):
+        """Initializes all required hyperparameters for a multi-class classification model.
+
+        Args:
+            input_features (int): Number of input features to the model.
+            out_features (int): Number of output features of the model
+              (how many classes there are).
+            hidden_units (int): Number of hidden units between layers, default 8.
+        """
+        super().__init__()
+        self.linear_layer_stack = nn.Sequential(
+            nn.Linear(in_features=input_features, out_features=hidden_units//4),
+            nn.ReLU(),
+            nn.Linear(in_features=hidden_units//4, out_features=hidden_units//2),
+            nn.ReLU(),
+            nn.Linear(in_features=hidden_units // 2, out_features=hidden_units),
+            nn.ReLU(),
+            nn.Linear(in_features=hidden_units, out_features=hidden_units),
+            nn.ReLU(),
+            nn.Linear(in_features=hidden_units, out_features=hidden_units),
+            nn.ReLU(),
+            nn.Linear(in_features=hidden_units, out_features=output_features),  # how many classes are there?
+        )
+
+    def forward(self, x):
+        return self.linear_layer_stack(x)
 
 if __name__ == "__main__":
 
@@ -59,7 +76,7 @@ if __name__ == "__main__":
     eta = 0
 
     # Create an instance of BlobModel and send it to the target device
-    sign_model = SignModel(input_features=NUM_FEATURES,
+    sign_model = SignModelDeep(input_features=NUM_FEATURES,
                         output_features=NUM_CLASSES,
                         hidden_units=128).to(device)
 
@@ -67,7 +84,8 @@ if __name__ == "__main__":
     loss_fn = nn.BCEWithLogitsLoss()
     # optimizer = torch.optim.SGD(sign_model.parameters(), lr=0.15, momentum=0.9) #93.97%
     optimizer = torch.optim.SGD(sign_model.parameters(), lr=0.15, momentum=0.98) #94.81%
-    optimizer = torch.optim.SGD(sign_model.parameters(), lr=0.15, momentum=0.98) #95.12%
+    optimizer = torch.optim.SGD(sign_model.parameters(), lr=0.15, momentum=0.98) #95.12% shallow model
+    optimizer = torch.optim.SGD(sign_model.parameters(), lr=0.1, momentum=0.98)
 
     # This sets up the simulation that simulates the measured amplitudes at the various physical locations.
     # It uses a C=1.5 value, which corresponds to the sampling schedule given in Eq. 16. The variable C here
@@ -84,7 +102,7 @@ if __name__ == "__main__":
     # num_train = 50000 #95.55 with extra layers
     # epochs = 5000
 
-    num_train = 10000
+    num_train = 100000
     epochs = 20
 
     measurements = np.zeros((num_train, len(narray)+2), dtype=np.float64)
@@ -113,7 +131,7 @@ if __name__ == "__main__":
     X_test, y_test = X_test.to(device), y_test.to(device)
 
     # batch_size = num_train // epochs
-    batch_size = 50
+    batch_size = 500
     batch_start = torch.arange(0, len(X_train), batch_size)
 
     for epoch in range(epochs):
@@ -162,7 +180,7 @@ if __name__ == "__main__":
     file_subscript = ''
     for x in narray:
         file_subscript += f'{x}'
-    torch.save(sign_model.state_dict(), "ml_models/sign_model_"+file_subscript+".pt")
+    # torch.save(sign_model.state_dict(), "ml_models/sign_model_deep_"+file_subscript+".pt")
     # torch.save(sign_model, "ml_models/sign_model_dropout_less_222223.pt")
     # print(measurements)
     # print(exact_signs)

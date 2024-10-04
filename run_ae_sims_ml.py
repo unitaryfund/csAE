@@ -19,6 +19,7 @@ import pickle
 import argparse
 import pathlib
 import torch
+torch.set_num_threads(1)
 from scipy.stats import binom
 from ml_optsigns import SignModel
 
@@ -150,8 +151,6 @@ if __name__ == "__main__":
 
     np.random.seed(7)
 
-    torch.set_num_threads(1)
-
     # In paper, we use 8, but it takes about four hours to run this in total on a 4 core laptop using 4 threads. If you want to just test this out, set num_lenghts to 6 and it should finish within minutes.
     num_lengths = args.num_lengths
     num_mc = args.num_mc
@@ -189,6 +188,7 @@ if __name__ == "__main__":
             sign_model = SignModel(input_features=len(narray) + 2,
                                    output_features=len(narray) + 1,
                                    hidden_units=128).to('cpu')
+            sign_model.share_memory()
 
             file_subscript = ''
             for x in narray:

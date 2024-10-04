@@ -20,7 +20,7 @@ import pickle
 import argparse
 import pathlib
 import torch
-torch.set_num_threads(1)
+torch.set_num_threads(24)
 from scipy.stats import binom
 from ml_optsigns import SignModel
 
@@ -32,7 +32,6 @@ warnings.simplefilter('ignore', category=NumbaPendingDeprecationWarning)
 
 
 def run(theta, n_samples, ula_signal, espirit, sign_model, eta=0.0, i=0):
-    torch.set_num_threads(1)
 
     np.random.seed(i)
     signal = ula_signal.estimate_signal(n_samples, theta, eta)
@@ -123,8 +122,7 @@ def run(theta, n_samples, ula_signal, espirit, sign_model, eta=0.0, i=0):
 
 
 if __name__ == "__main__":
-    torch.set_num_threads(1)
-    
+
     parser = argparse.ArgumentParser(prog='Run ULA Simulation',
                                      description="This program creates the simulation files. Running this program will generate all data files needed by plots.ipynb which will generate the figures in the paper. \n\n Use the following commands from the command line to run the correct simulations and store the output:\n python run_ae_sims.py --save --dir sims --nthreads=4 --num_mc=500 --num_lengths=8 --eta=0.0 \n python run_ae_sims.py --save --dir sims_eta0.01 --nthreads=4 --num_mc=500 --num_lengths=8 --eta=0.01 --C=1.5\n python run_ae_sims.py --save --dir sims_eta0.05 --nthreads=4 --num_mc=500 --num_lengths=8 --eta=0.05")
     parser.add_argument('--save', action='store_true',

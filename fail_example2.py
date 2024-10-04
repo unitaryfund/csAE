@@ -224,7 +224,7 @@ ula_signal_ones= ula_signal.get_ula_signal(signal)
 plt.plot(np.real(ula_signal_exact), linewidth=1)
 plt.plot(np.real(ula_signal_found), linewidth=1)
 # plt.plot(np.cos(np.pi-3.9*0.06464824*np.pi*np.arange(len(ula_signal_exact))))
-plt.plot(np.cos(np.pi-4*0.05923209*np.pi*np.arange(len(ula_signal_exact))))
+# plt.plot(np.cos(np.pi-4*0.05923209*np.pi*np.arange(len(ula_signal_exact))))
 
 plt.xlim([0,100])
 plt.show()
@@ -238,7 +238,32 @@ plt.plot(np.cos((2*ula_signal.depths+1)*(0.06464824*np.pi))**2, '.')
 plt.show()
 plt.plot(np.abs(np.fft.fft(ula_signal_exact)))
 plt.plot(np.abs(np.fft.fft(ula_signal_found)))
-plt.plot(np.abs(np.fft.fft(ula_signal_ones)))
+# plt.plot(np.abs(np.fft.fft(ula_signal_ones)))
 plt.show()
 theta_fft = np.pi*np.argmax(np.abs(np.fft.fft(ula_signal_found)))/len(ula_signal_found)/2
 print(theta_fft)
+print(ula_signal.measurements)
+print(np.cos((2*ula_signal.depths+1)*(0.06464824*np.pi)))
+print(np.cos((2*ula_signal.depths+1)*(0.05918431*np.pi)))
+print(np.sin((2*ula_signal.depths+1)*(0.06464824*np.pi)))
+print(np.sin((2*ula_signal.depths+1)*(0.05918431*np.pi)))
+print()
+print(np.sqrt(1.0-ula_signal.measurements))
+print(np.sin((2*ula_signal.depths+1)*(0.06464824*np.pi))**2)
+print(np.sin((2*ula_signal.depths+1)*(0.05918431*np.pi))**2)
+
+psin_exact = np.sin((2*ula_signal.depths+1)*(0.06464824*np.pi))**2
+psin_found = np.sin((2*ula_signal.depths+1)*(0.05918431*np.pi))**2
+
+ll_correct = np.sum(
+        np.log([1e-75 + binom.pmf(ula_signal.n_samples[kk] * (1-ula_signal.measurements[kk]), ula_signal.n_samples[kk],
+                                  psin_exact[kk]) for kk in
+                range(len(ula_signal.n_samples))]))
+
+ll_found = np.sum(
+        np.log([1e-75 + binom.pmf(ula_signal.n_samples[kk] * (1-ula_signal.measurements[kk]), ula_signal.n_samples[kk],
+                                  psin_found[kk]) for kk in
+                range(len(ula_signal.n_samples))]))
+
+print(ll_correct)
+print(ll_found)

@@ -29,7 +29,17 @@ warnings.simplefilter('ignore', category=NumbaDeprecationWarning)
 warnings.simplefilter('ignore', category=NumbaPendingDeprecationWarning)
 
 
-def run(theta, n_samples, ula_signal, espirit, sign_model, eta=0.0, i=0):
+def run(theta, n_samples, ula_signal, espirit, narray, eta=0.0, i=0):
+    sign_model = SignModel(input_features=len(narray) + 2,
+                           output_features=len(narray) + 1,
+                           hidden_units=128).to('cpu')
+
+    file_subscript = ''
+    for x in narray:
+        file_subscript += f'{x}'
+    sign_model.load_state_dict(torch.load("ml_models/sign_model_" + file_subscript + ".pt", weights_only=True))
+    sign_model.eval()
+
     np.random.seed(i)
     signal = ula_signal.estimate_signal(n_samples, theta, eta)
     objective = -np.inf
@@ -115,6 +125,7 @@ def run(theta, n_samples, ula_signal, espirit, sign_model, eta=0.0, i=0):
 
     error = np.abs(np.sin(theta) - np.sin(theta_found))
 
+    del sign_model
     return error, theta
 
 
@@ -139,7 +150,6 @@ if __name__ == "__main__":
     parser.add_argument('--C', type=float,
                         help="This is a free parameter that determines how many shots to take at each step. (default=3)",
                         default=3)
-    parser.add_argument('--no_opt', action='store_true', help="If set, this uses the exact signs and doe not optimize. (default=False)")
     args = parser.parse_args()
 
     print('Command Line Arguments')
@@ -182,19 +192,10 @@ if __name__ == "__main__":
             espirit = ESPIRIT()
             narray = [2] * (2 * r + 2)
             narray[-1] = 3
-            sign_model = SignModel(input_features=len(narray) + 2,
-                                   output_features=len(narray) + 1,
-                                   hidden_units=128).to('cpu')
+
             arrays.append(narray)
             print(f'Array parameters: {narray}')
             ula_signal = TwoqULASignal(M=narray, C=args.C)
-
-            file_subscript = ''
-            for x in narray:
-                file_subscript += f'{x}'
-
-            sign_model.load_state_dict(torch.load("ml_models/sign_model_" + file_subscript + ".pt", weights_only=True))
-            sign_model.eval()
 
             if args.fixed_sample:
                 n_samples = [args.fixed_sample] * len(ula_signal.n_samples)
@@ -212,13 +213,14 @@ if __name__ == "__main__":
 
             pool = multiprocessing.Pool(num_threads)
             start = time.time()
-            processes = [pool.apply_async(run, args=(theta, n_samples, ula_signal, espirit, sign_model, args.eta, i)) for i in
+            processes = [pool.apply_async(run, args=(theta, n_samples, ula_signal, espirit, narray, args.eta, i)) for i in
                          range(num_mc)]
             sims = [p.get() for p in processes]
+            pool.terminate()
             for k in range(num_mc):
                 errors[r, k], thetas[r, k] = sims[k]
             end = time.time()
-            del sign_model
+
             print(f'Time for trial {r + 1}: {end - start} (s)')
 
             print(f'Number of queries: {num_queries[r]}')

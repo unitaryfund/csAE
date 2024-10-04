@@ -148,6 +148,7 @@ if __name__ == "__main__":
 
     print('Command Line Arguments')
     print(args)
+    print(torch.get_num_threads())
 
     pathlib.Path(args.dir).mkdir(parents=True, exist_ok=True)
 

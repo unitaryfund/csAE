@@ -6,6 +6,8 @@ from frequencyestimator import *
 import itertools
 import math
 from scipy.stats import binom
+import torch
+from ml_optsigns import SignModel
 
 sns.set_style("whitegrid")
 sns.despine(left=True, bottom=True)
@@ -13,19 +15,26 @@ sns.set_context("poster", font_scale = .45, rc={"grid.linewidth": 0.8})
 
 # For reproducibility
 #22, 26
-np.random.seed(22)
+np.random.seed(14)
 # Set the per oracle noise parameter (See Eq. 18)
 eta = 0
 # Set the array parameters (See Thm. II.2 and Eq. 12)
-narray = [3, 3, 3, 3, 2, 2, 2, 2]
-narray = [2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
-q = 6
-narray = [2] * q
-narray = [2, 2, 2, 2, 2, 2]
-narray = [2, 2, 2, 2, 2, 3]
+narray = [2, 2, 2, 2, 2, 2, 2, 3]
 # Set the actual amplitude
 a = 0.2
 theta = np.arcsin(a)
+print(theta)
+print(theta/np.pi)
+
+sign_model = SignModel(input_features=len(narray)+2,
+                        output_features=len(narray)+1,
+                        hidden_units=128).to('cpu')
+
+file_subscript = ''
+for x in narray:
+    file_subscript += f'{x}'
+sign_model.load_state_dict(torch.load("ml_models/sign_model_"+file_subscript+".pt", weights_only=True))
+sign_model.eval()
 
 # This sets up the simulation that simulates the measured amplitudes at the various physical locations.
 # It uses a C=1.5 value, which corresponds to the sampling schedule given in Eq. 16. The variable C here
@@ -46,6 +55,7 @@ sign_overlap = 0
 signal = ula_signal.estimate_signal(n_samples=ula_signal.n_samples, theta=theta, eta=eta)
 all_signs = [s for s in itertools.product([1.0, -1.0], repeat=len(signal)-1)]
 
+
 # all_signs = [[1.0]*(len(signal)-1)]
 # all_signs = [ula_signal.signs_exact[1:]]
 
@@ -54,6 +64,10 @@ for k in range(num_mc):
     # This estimates the covariance matrix of Eq. 8 using the approch given in DOI:10.1109/LSP.2015.2409153
 
     ula_signal.estimate_signal(n_samples=ula_signal.n_samples, theta=theta, eta=eta)
+    X = torch.from_numpy(ula_signal.measurements).type(torch.float)
+    all_signs = [-1+2*(sign_model(X) > 0.5).float().numpy()]
+    # print(all_signs)
+    # print(ula_signal.signs_exact)
     objective = -np.inf
 
     for signs in all_signs:
@@ -224,3 +238,9 @@ ula_signal_found = ula_signal.get_ula_signal(signal)
 # plt.plot(np.cos((2*ula_signal.depths+1)*(np.pi/2-thetas[k]))**2)
 # plt.plot(np.cos((2*ula_signal.depths+1)*(np.pi/4-thetas[k]))**2)
 # plt.show()
+
+print(np.cos((2*np.array(ula_signal.depths)+1)*0.2013579207903308))
+print(np.cos((2*np.array(ula_signal.depths)+1)*0.05923209*np.pi))
+print()
+print(np.sin((2*np.array(ula_signal.depths)+1)*0.2013579207903308))
+print(np.sin((2*np.array(ula_signal.depths)+1)*0.05923209*np.pi))

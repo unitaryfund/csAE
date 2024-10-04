@@ -211,7 +211,7 @@ if __name__ == "__main__":
             num_queries[r] = np.sum(np.array(ula_signal.depths) * np.array(n_samples)) + n_samples[0]/2
             max_single_query[r] = np.max(ula_signal.depths)
 
-            pool = multiprocessing.Pool(num_threads)
+            pool = torch.multiprocessing.Pool(num_threads)
             start = time.time()
             processes = [pool.apply_async(run, args=(theta, n_samples, ula_signal, espirit, narray, args.eta, i)) for i in
                          range(num_mc)]

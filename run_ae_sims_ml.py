@@ -123,6 +123,8 @@ def run(theta, n_samples, ula_signal, espirit, sign_model, eta=0.0, i=0):
 
 
 if __name__ == "__main__":
+    torch.set_num_threads(1)
+    
     parser = argparse.ArgumentParser(prog='Run ULA Simulation',
                                      description="This program creates the simulation files. Running this program will generate all data files needed by plots.ipynb which will generate the figures in the paper. \n\n Use the following commands from the command line to run the correct simulations and store the output:\n python run_ae_sims.py --save --dir sims --nthreads=4 --num_mc=500 --num_lengths=8 --eta=0.0 \n python run_ae_sims.py --save --dir sims_eta0.01 --nthreads=4 --num_mc=500 --num_lengths=8 --eta=0.01 --C=1.5\n python run_ae_sims.py --save --dir sims_eta0.05 --nthreads=4 --num_mc=500 --num_lengths=8 --eta=0.05")
     parser.add_argument('--save', action='store_true',
@@ -215,7 +217,7 @@ if __name__ == "__main__":
             num_queries[r] = np.sum(np.array(ula_signal.depths) * np.array(n_samples)) + n_samples[0]/2
             max_single_query[r] = np.max(ula_signal.depths)
 
-            pool = multiprocessing.Pool(num_threads)
+            pool = torch.multiprocessing.Pool(num_threads)
             start = time.time()
             processes = [pool.apply_async(run, args=(theta, n_samples, ula_signal, espirit, sign_model, args.eta, i)) for i in
                          range(num_mc)]

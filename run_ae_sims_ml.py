@@ -29,16 +29,8 @@ warnings.simplefilter('ignore', category=NumbaDeprecationWarning)
 warnings.simplefilter('ignore', category=NumbaPendingDeprecationWarning)
 
 
-def run(theta, n_samples, ula_signal, espirit, narray, eta=0.0, i=0):
-    sign_model = SignModel(input_features=len(narray) + 2,
-                           output_features=len(narray) + 1,
-                           hidden_units=128).to('cpu')
+def run(theta, n_samples, ula_signal, espirit, sign_model, eta=0.0, i=0):
 
-    file_subscript = ''
-    for x in narray:
-        file_subscript += f'{x}'
-    sign_model.load_state_dict(torch.load("ml_models/sign_model_" + file_subscript + ".pt", weights_only=True))
-    sign_model.eval()
 
     np.random.seed(i)
     signal = ula_signal.estimate_signal(n_samples, theta, eta)
@@ -125,7 +117,6 @@ def run(theta, n_samples, ula_signal, espirit, narray, eta=0.0, i=0):
 
     error = np.abs(np.sin(theta) - np.sin(theta_found))
 
-    del sign_model
     return error, theta
 
 
@@ -158,6 +149,8 @@ if __name__ == "__main__":
     pathlib.Path(args.dir).mkdir(parents=True, exist_ok=True)
 
     np.random.seed(7)
+
+    torch.set_num_threads(1)
 
     # In paper, we use 8, but it takes about four hours to run this in total on a 4 core laptop using 4 threads. If you want to just test this out, set num_lenghts to 6 and it should finish within minutes.
     num_lengths = args.num_lengths
@@ -193,6 +186,16 @@ if __name__ == "__main__":
             narray = [2] * (2 * r + 2)
             narray[-1] = 3
 
+            sign_model = SignModel(input_features=len(narray) + 2,
+                                   output_features=len(narray) + 1,
+                                   hidden_units=128).to('cpu')
+
+            file_subscript = ''
+            for x in narray:
+                file_subscript += f'{x}'
+            sign_model.load_state_dict(torch.load("ml_models/sign_model_" + file_subscript + ".pt", weights_only=True))
+            sign_model.eval()
+
             arrays.append(narray)
             print(f'Array parameters: {narray}')
             ula_signal = TwoqULASignal(M=narray, C=args.C)
@@ -213,7 +216,7 @@ if __name__ == "__main__":
 
             pool = torch.multiprocessing.Pool(num_threads)
             start = time.time()
-            processes = [pool.apply_async(run, args=(theta, n_samples, ula_signal, espirit, narray, args.eta, i)) for i in
+            processes = [pool.apply_async(run, args=(theta, n_samples, ula_signal, espirit, sign_model, args.eta, i)) for i in
                          range(num_mc)]
             sims = [p.get() for p in processes]
             pool.terminate()

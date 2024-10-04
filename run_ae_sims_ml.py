@@ -9,6 +9,7 @@ import os
 
 os.environ['OPENBLAS_NUM_THREADS'] = '1'
 os.environ['MKL_NUM_THREADS'] = '1'
+os.environ['OMP_NUM_THREADS'] = '1'
 
 import numpy as np
 from signals import *
@@ -31,7 +32,7 @@ warnings.simplefilter('ignore', category=NumbaPendingDeprecationWarning)
 
 
 def run(theta, n_samples, ula_signal, espirit, sign_model, eta=0.0, i=0):
-
+    torch.set_num_threads(1)
 
     np.random.seed(i)
     signal = ula_signal.estimate_signal(n_samples, theta, eta)
@@ -214,7 +215,7 @@ if __name__ == "__main__":
             num_queries[r] = np.sum(np.array(ula_signal.depths) * np.array(n_samples)) + n_samples[0]/2
             max_single_query[r] = np.max(ula_signal.depths)
 
-            pool = torch.multiprocessing.Pool(num_threads)
+            pool = multiprocessing.Pool(num_threads)
             start = time.time()
             processes = [pool.apply_async(run, args=(theta, n_samples, ula_signal, espirit, sign_model, args.eta, i)) for i in
                          range(num_mc)]

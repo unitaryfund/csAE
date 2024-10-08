@@ -9,11 +9,6 @@ def accuracy_fn(y_true, y_pred):
     correct = torch.eq(y_true, y_pred).sum().item() # torch.eq() calculates where two tensors are equal
     acc = (correct / (y_pred.shape[0]*y_pred.shape[1])) * 100
     return acc
-
-
-narray = [2, 2, 2, 2, 2, 3]
-NUM_FEATURES = len(narray)+2
-NUM_CLASSES = len(narray)+1
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Build model
@@ -70,43 +65,51 @@ class SignModelDeep(nn.Module):
 if __name__ == "__main__":
 
     # For reproducibility
-    #22, 26
     np.random.seed(14)
     # Set the per oracle noise parameter (See Eq. 18)
     eta = 0
-
-    # Create an instance of BlobModel and send it to the target device
-    sign_model = SignModelDeep(input_features=NUM_FEATURES,
-                        output_features=NUM_CLASSES,
-                        hidden_units=128).to(device)
-
-    # loss_fn = nn.CrossEntropyLoss()
-    loss_fn = nn.BCEWithLogitsLoss()
-    # optimizer = torch.optim.SGD(sign_model.parameters(), lr=0.15, momentum=0.9) #93.97%
-    optimizer = torch.optim.SGD(sign_model.parameters(), lr=0.15, momentum=0.98) #94.81%
-    optimizer = torch.optim.SGD(sign_model.parameters(), lr=0.15, momentum=0.98) #95.12% shallow model
-    optimizer = torch.optim.SGD(sign_model.parameters(), lr=0.1, momentum=0.98)
-
-    # This sets up the simulation that simulates the measured amplitudes at the various physical locations.
-    # It uses a C=1.5 value, which corresponds to the sampling schedule given in Eq. 16. The variable C here
-    # is the parameter K in the paper.
-    ula_signal = TwoqULASignal(M=narray, C=5.0)
+    # Set array parameters
+    narray = [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+    # Set sampling rate
+    C = 5.0
 
     # generate training data
     # num_train = 500000 #93.97%
     # epochs = 2000
-    num_train = 100000 #94.81%
-    epochs = 1000
+    # num_train = 100000 #94.81%
+    # epochs = 1000
     # num_train = 500000 #95.22%
     # epochs = 2000
     # num_train = 50000 #95.55 with extra layers
     # epochs = 5000
 
-    num_train = 100000
-    epochs = 20
+    num_train = 50000
+    epochs = 15
 
-    measurements = np.zeros((num_train, len(narray)+2), dtype=np.float64)
-    exact_signs = np.zeros((num_train, len(narray)+1), dtype=np.int32)
+    # Use for length
+    # This sets up the simulation that simulates the measured amplitudes at the various physical locations.
+    # It uses a C=1.5 value, which corresponds to the sampling schedule given in Eq. 16. The variable C here
+    # is the parameter K in the paper.
+    ula_signal = TwoqULASignal(M=narray, C=C)
+    depths, _ = ula_signal._get_depths(narray, C=C)
+    print(depths)
+    NUM_FEATURES = len(depths)
+    NUM_CLASSES = len(depths)-1
+    measurements = np.zeros((num_train, NUM_FEATURES), dtype=np.float64)
+    exact_signs = np.zeros((num_train, NUM_CLASSES), dtype=np.int32)
+
+    # Create an instance of BlobModel and send it to the target device
+    sign_model = SignModel(input_features=NUM_FEATURES,
+                        output_features=NUM_CLASSES,
+                        hidden_units=16*NUM_FEATURES).to(device)
+
+    # loss_fn = nn.CrossEntropyLoss()
+    loss_fn = nn.BCEWithLogitsLoss()
+    # optimizer = torch.optim.SGD(sign_model.parameters(), lr=0.15, momentum=0.9) #93.97%
+    optimizer = torch.optim.SGD(sign_model.parameters(), lr=0.15, momentum=0.98)  # 94.81%
+    optimizer = torch.optim.SGD(sign_model.parameters(), lr=0.15, momentum=0.98)  # 95.12% shallow model
+    # optimizer = torch.optim.SGD(sign_model.parameters(), lr=0.1, momentum=0.98)
+
     for i in range(num_train):
         theta = np.random.uniform(0, np.pi/2.0)
         signal = ula_signal.estimate_signal(n_samples=ula_signal.n_samples, theta=theta, eta=eta)
@@ -180,7 +183,9 @@ if __name__ == "__main__":
     file_subscript = ''
     for x in narray:
         file_subscript += f'{x}'
-    # torch.save(sign_model.state_dict(), "ml_models/sign_model_deep_"+file_subscript+".pt")
+
+    filename = f'ml_models/sign_model_{file_subscript}_C{C:0.2f}.pt'
+    torch.save(sign_model.state_dict(), filename)
     # torch.save(sign_model, "ml_models/sign_model_dropout_less_222223.pt")
     # print(measurements)
     # print(exact_signs)

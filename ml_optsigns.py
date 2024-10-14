@@ -69,7 +69,7 @@ if __name__ == "__main__":
     # Set the per oracle noise parameter (See Eq. 18)
     eta = 0
     # Set array parameters
-    narray = [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+    narray = [3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
     # Set sampling rate
     C = 5.0
 

@@ -70,6 +70,7 @@ if __name__ == "__main__":
     eta = 0
     # Set array parameters
     narray = [3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+    narray = [2, 2, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2]
     # Set sampling rate
     C = 5.0
 

@@ -278,9 +278,8 @@ if __name__ == "__main__":
                     narray[0] = 3
                 elif m==1:
                     narray[1] = 3
-                elif m==2:
-                    narray[0] = 3
-                    narray[1] = 3
+                elif m==2 and len(narray) > 2:
+                    narray[2] = 3
 
                 ula_signal = TwoqULASignal(M=narray, C=args.C)
                 ula_signal_m.append(ula_signal)

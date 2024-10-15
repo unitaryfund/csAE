@@ -176,7 +176,7 @@ class TwoqULASignal(ULASignal):
 
         return signed_signal
     
-    def estimate_signal(self, n_samples, theta, eta=0.0, signs=None):
+    def estimate_signal(self, n_samples, theta, eta=0.0, signs=None, offset=0.0):
         depths = self.depths
         # print(self.depths)
         self.signal = np.zeros(len(depths), dtype = np.complex128)
@@ -228,7 +228,7 @@ class TwoqULASignal(ULASignal):
             #     self.p0mp1 = p0_estimate - p1_estimate
 
             # Compute f(n) - Eq. 3
-            fi_estimate = np.exp(1.0j*theta_estimated)
+            fi_estimate = np.exp(1.0j*theta_estimated + 2.0j*(2*n+1)*offset)
             self.signal[i] = fi_estimate
 
         return self.signal 

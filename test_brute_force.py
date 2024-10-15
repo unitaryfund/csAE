@@ -48,11 +48,16 @@ all_signs = [s for s in itertools.product([1.0, -1.0], repeat=len(signal)-1)]
 # all_signs = [[1.0]*(len(signal)-1)]
 # all_signs = [ula_signal.signs_exact[1:]]
 
+print(f'Exact theta:    {theta/np.pi}')
+offset = 0.23*np.pi
+print(f'theta + offset: {(theta+offset)/np.pi}')
+
 for k in range(num_mc):
     print(f'Trial {k+1} of {num_mc}')
     # This estimates the covariance matrix of Eq. 8 using the approch given in DOI:10.1109/LSP.2015.2409153
 
-    ula_signal.estimate_signal(n_samples=ula_signal.n_samples, theta=theta, eta=eta)
+
+    ula_signal.estimate_signal(n_samples=ula_signal.n_samples, theta=theta, eta=eta, offset=offset)
     objective = -np.inf
 
     for signs in all_signs:
@@ -65,12 +70,18 @@ for k in range(num_mc):
         # This estimates the angle using the ESPIRIT algorithm
         theta_est, eigs = espirit.estimate_theta_toeplitz(R, s0=np.real(signal[0])**2)
 
+        if offset < theta_est:
+            theta_est = theta_est - offset
+        else:
+            theta_est = np.pi/2.0 - theta_est - offset
+
 
         objective_new = np.abs(espirit.eigs[0]) - np.abs(espirit.eigs[1])
         # print(f'Objective: {objective}')
         if math.isclose(np.linalg.norm(np.array(ula_signal.signs_exact) - np.array(signs)), 0):
             print(f'     CORRECT ANSWER')
             print(f'     angle {-np.angle(eigs) / np.pi / 4}; objective {objective_new}')
+            print(f'     angle {theta_est/np.pi}; objective {objective_new}')
             correct_objective = objective_new
         # print(f'Objective New: {objective_new}')
         # print(f'Signs Exact: {ula_signal.signs_exact}')
@@ -84,6 +95,7 @@ for k in range(num_mc):
             objective = objective_new
             signs_found = signs
             print(f'angle {-np.angle(eigs) / np.pi / 4}; objective {objective}')
+            print(f'angle {theta_est / np.pi}; objective {objective_new}')
             # print(np.real(signal[0])**2)
             # print(np.abs(np.imag(signal[0])))
             # print(np.cos(2*theta_est)**2)

@@ -1,0 +1,8 @@
+__pycache__/
+*.aux
+*.log
+*.out
+*.blg
+*.bbl
+main_notes.aux
+study_guide.*

@@ -1,6 +1,15 @@
-numpy
-matplotlib
-seaborn
-scipy
-numba
-statsmodels
+# Pinned to the environment the published results were produced in.
+# Python 3.12.11
+#
+#   python3 -m venv .venv && source .venv/bin/activate
+#   pip install -r requirements.txt
+#
+# numpy is pinned exactly: the simulations draw measurement records from
+# np.random.default_rng, whose stream is not guaranteed stable across numpy
+# releases, so a different version can change every seeded result.
+numpy==1.26.4
+scipy==1.13.1
+matplotlib==3.9.0
+statsmodels==0.14.2
+numba==0.59.1
+seaborn==0.13.2

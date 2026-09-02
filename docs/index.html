@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="Interactive companion to 'Quantum amplitude estimation beyond power-of-two schedules': watch the likelihood over theta evolve shot by shot on a geometric depth ladder.">
+<title>Ladder Likelihood Bench</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f4f3ee; --panel:#fbfaf6; --ink:#1d2027; --ink2:#4d5059; --muted:#7b7e87; --line:#d9d7cf; --grid:#e8e6df;
+  --lik:#2f7fd1; --likfill:rgba(47,127,209,.18); --truth:#d9542b; --rung:#c9931f; --rungfill:rgba(201,147,31,.16);
+  --good:#1f8f5f; --bad:#c23b2a; --focus:#2f7fd1;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#13161b; --panel:#1a1e25; --ink:#e6e4dc; --ink2:#b9b7ae; --muted:#8a8d96; --line:#2c313a; --grid:#232830;
+    --lik:#5b9ce6; --likfill:rgba(91,156,230,.22); --truth:#f0704a; --rung:#e0aa3a; --rungfill:rgba(224,170,58,.18);
+    --good:#3fbf85; --bad:#e2604f; --focus:#5b9ce6;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#13161b; --panel:#1a1e25; --ink:#e6e4dc; --ink2:#b9b7ae; --muted:#8a8d96; --line:#2c313a; --grid:#232830;
+  --lik:#5b9ce6; --likfill:rgba(91,156,230,.22); --truth:#f0704a; --rung:#e0aa3a; --rungfill:rgba(224,170,58,.18);
+  --good:#3fbf85; --bad:#e2604f; --focus:#5b9ce6;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14px;line-height:1.45}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 22px 48px}
+header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 24px;margin-bottom:18px}
+h1{font-family:"Fraunces",Georgia,"Times New Roman",serif;font-weight:500;font-size:30px;letter-spacing:-.01em;margin:0;text-wrap:balance}
+header p{margin:0;color:var(--ink2);max-width:62ch}
+.bench{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:18px;align-items:start}
+@media (max-width:820px){.bench{grid-template-columns:1fr}}
+.stage{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 14px 10px;display:flex;flex-direction:column;gap:10px}
+.lab{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.lab .t{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.lab .s{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums}
+canvas{display:block;width:100%}
+.rail{display:flex;flex-direction:column;gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px}
+.card h2{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:0 0 8px}
+.ladder{display:flex;flex-direction:column;gap:5px;font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:12px;font-variant-numeric:tabular-nums}
+.rung{display:grid;grid-template-columns:44px 1fr;gap:8px;align-items:center;padding:2px 4px;border-radius:3px}
+.rung.active{background:var(--rungfill)}
+.rung .n{text-align:right;color:var(--ink2)}
+.rung.active .n{color:var(--ink);font-weight:500}
+.pips{display:flex;flex-wrap:wrap;gap:3px}
+.pip{width:9px;height:9px;border-radius:2px;border:1px solid var(--muted);background:transparent}
+.pip.k0{background:var(--lik);border-color:var(--lik)}
+.pip.k1{background:var(--panel);border-color:var(--lik);box-shadow:inset 0 0 0 2px var(--lik)}
+.readouts{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-size:13px}
+.readouts dt{color:var(--ink2);margin:0}
+.readouts dd{margin:0;font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums;text-align:right}
+.chip{display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:.04em}
+.chip.ok{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
+.chip.no{background:color-mix(in srgb,var(--bad) 18%,transparent);color:var(--bad)}
+.chip.wait{background:color-mix(in srgb,var(--muted) 18%,transparent);color:var(--ink2)}
+.controls{margin-top:16px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px;display:flex;flex-wrap:wrap;gap:12px 22px;align-items:end}
+.ctl{display:flex;flex-direction:column;gap:4px}
+.ctl label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.seg{display:flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.seg button{background:transparent;border:0;color:var(--ink2);padding:6px 11px;font:inherit;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.btns{display:flex;gap:8px}
+button.act{background:var(--ink);color:var(--bg);border:0;border-radius:4px;padding:7px 14px;font:inherit;font-weight:600;cursor:pointer}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:7px 12px;font:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+input[type=range]{width:150px;accent-color:var(--lik)}
+.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+.explain{margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px 22px;color:var(--ink2);max-width:100%}
+.explain p{margin:0}
+.explain b{color:var(--ink);font-weight:600}
+.score{width:100%;border-collapse:collapse;font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:12px;font-variant-numeric:tabular-nums}
+.score th{font-weight:500;color:var(--muted);text-align:right;padding:2px 4px;border-bottom:1px solid var(--line)}
+.score th:first-child,.score td:first-child{text-align:left}
+.score td{text-align:right;padding:3px 4px}
+.score tr.cur td{color:var(--ink);font-weight:500}
+.score td.bad{color:var(--bad)}
+.score .rate{color:var(--muted);font-size:11px}
+.hint{margin:8px 0 0;font-size:11.5px;color:var(--muted)}
+.swatch{display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:-1px;margin-right:4px}
+</style>
+<style>img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+
+<div class="wrap">
+<header>
+  <h1>Watch a geometric ladder decide which tick you are on</h1>
+  <p>Grover circuits at depth <span class="mono">n</span> report a bit with probability <span class="mono">cos²((2n+1)θ)</span>. Each shot multiplies the likelihood over <span class="mono">θ</span> by that factor. The deepest rung draws a comb of identical peaks; every shallower rung is a vote that erases the wrong ones.</p>
+</header>
+
+<div class="bench">
+  <div class="stage">
+    <div class="lab"><span class="t">This shot: the rung's fringe, with the outcome it favors</span><span class="s" id="shotLabel">no shots yet</span></div>
+    <canvas id="fringe" data-h="90"></canvas>
+    <div class="lab"><span class="t">Likelihood over the whole range, 0 &lt; θ &lt; π/2</span><span class="s" id="fullLabel"></span></div>
+    <canvas id="full" data-h="220"></canvas>
+    <div class="lab"><span class="t">Zoom: ±4 basins around the truth</span><span class="s" id="zoomLabel"></span></div>
+    <canvas id="zoom" data-h="220"></canvas>
+  </div>
+
+  <div class="rail">
+    <div class="card">
+      <h2>Readouts</h2>
+      <dl class="readouts">
+        <dt>shots taken</dt><dd id="rShots">0 / 0</dd>
+        <dt>queries used</dt><dd id="rQ">0 / 0</dd>
+        <dt>true a</dt><dd id="rA">–</dd>
+        <dt>estimate â</dt><dd id="rAhat">–</dd>
+        <dt>error |â − a|</dt><dd id="rErr">–</dd>
+        <dt>basin width w</dt><dd id="rW">–</dd>
+        <dt>estimate is</dt><dd id="rFlip"><span class="chip wait">waiting</span></dd>
+        <dt>rival peaks alive</dt><dd id="rAlive">–</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h2>Scoreboard: completed runs</h2>
+      <table class="score" id="score"><thead><tr><th>r @ n<sub>max</sub></th><th>runs</th><th>wrong basin</th><th>catastrophic</th></tr></thead><tbody></tbody></table>
+      <p class="hint">A run counts when all its shots are in. Wrong basin: estimate more than one basin from the truth. Catastrophic: more than ten.</p>
+    </div>
+    <div class="card">
+      <h2>Ladder (deepest on top)</h2>
+      <div class="ladder" id="ladder"></div>
+    </div>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="ctl"><label>ratio r</label><div class="seg" id="segR"><button data-v="1.25">1.25</button><button data-v="1.45" aria-pressed="true">1.45</button><button data-v="2">2 (powers of two)</button></div></div>
+  <div class="ctl"><label>deepest depth n<sub>max</sub></label><div class="seg" id="segN"><button data-v="32">32</button><button data-v="64" aria-pressed="true">64</button><button data-v="125">125</button></div></div>
+  <div class="ctl"><label>shot order</label><div class="seg" id="segO"><button data-v="deep" aria-pressed="true">deepest first</button><button data-v="shallow">shallowest first</button></div></div>
+  <div class="ctl"><label>true amplitude a = <span class="mono" id="aVal">0.55</span></label><input type="range" id="aRange" min="0.10" max="0.90" step="0.005" value="0.55"></div>
+  <div class="ctl"><label>speed</label><input type="range" id="speed" min="1" max="10" step="1" value="4"></div>
+  <div class="ctl"><label>&nbsp;</label><div class="btns"><button class="act" id="btnStep">Next shot</button><button class="act" id="btnPlay">Play</button><button class="ghost" id="btnAll">Finish</button><button class="ghost" id="btnReset">New draw</button><button class="ghost" id="btnBatch">Run 50 draws</button><button class="ghost" id="btnClear">Clear scoreboard</button></div></div>
+</div>
+
+<div class="explain">
+  <p><b>The comb.</b> With <span class="mono">n<sub>max</sub> = 64</span> the deepest rung's response repeats every <span class="mono">w = π/(2·129)</span> in θ. One shot there says "you are at one of these 65 places", all equally likely. That is a basin: the deepest rung fixes where you are <i>within</i> a tick, never <i>which</i> tick.</p>
+  <p><b>The votes.</b> A shallower rung has a wider fringe, so its outcome favors some basins and disfavors others. Two or three shots per rung are enough, because "this tick or that one" is a yes/no question. Watch <span class="swatch" style="background:var(--rung)"></span>the amber fringe: where it is high the shot said "likely here".</p>
+  <p><b>Try r = 2.</b> Powers of two space the rungs so far apart that each decision rests on one rung. Rival peaks tens of basins away survive far more often, and the estimate <span class="swatch" style="background:var(--lik)"></span> lands in the wrong basin. At r = 1.45 several rungs cover every scale and the comb collapses to one peak with single-digit shot counts.</p>
+  <p><b>What is fixed here.</b> Depths are <span class="mono">round(r<sup>j</sup>)</span> up to <span class="mono">n<sub>max</sub></span> plus depth 0; the shot profile is one shot at the deepest rung and one more per shallower rung. Nothing adapts to the data. The truth <span class="swatch" style="background:var(--truth)"></span> is drawn fresh with "New draw".</p>
+</div>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const cvF=$('fringe'), cvL=$('full'), cvZ=$('zoom');
+const G=4800;                                  // grid over (0, pi/2)
+const TH=new Float64Array(G); for(let i=0;i<G;i++) TH[i]=(i+0.5)*(Math.PI/2)/G;
+let r=1.45, nmax=64, order='deep', aTrue=0.55, speed=4;
+let depths=[], shots=[], d=[], seq=[], step=0, ll=new Float64Array(G), hist=[], timer=null, w=0, thTrue=0, Ntot=0;
+let tally={}, recorded=false, tallyOrder=[];
+
+function tok(name){return getComputedStyle(document.documentElement).getPropertyValue(name).trim();}
+function buildLadder(){
+  const set=new Set([0]); let x=1;
+  while(Math.round(x)<=nmax){set.add(Math.round(x)); x*=r;}
+  depths=[...set].sort((a,b)=>a-b);
+  const L=depths.length; shots=depths.map((_,j)=>L-j);
+  d=depths.map(n=>2*n+1); w=Math.PI/(2*d[L-1]);
+  Ntot=depths.reduce((s,n,j)=>s+n*shots[j],0)+shots[0];
+  seq=[]; const js=[...depths.keys()]; if(order==='deep') js.reverse();
+  for(const j of js) for(let k=0;k<shots[j];k++) seq.push(j);
+}
+function resetState(freshTruth){
+  buildLadder();
+  if(freshTruth) aTrue=+(0.1+0.8*Math.random()).toFixed(3);
+  thTrue=Math.asin(aTrue); ll.fill(0); hist=[]; step=0; recorded=false;
+}
+function reset(freshTruth){
+  resetState(freshTruth);
+  $('aRange').value=aTrue; $('aVal').textContent=aTrue.toFixed(3);
+  thTrue=Math.asin(aTrue); ll.fill(0); hist=[]; step=0; stopPlay(); renderLadder(); drawAll();
+}
+function p(n,th){const c=Math.cos((2*n+1)*th); return c*c;}
+function takeShot(){
+  if(step>=seq.length) return false;
+  const j=seq[step]; const pj=p(depths[j],thTrue); const k=Math.random()<pj?0:1;
+  const dj=d[j];
+  for(let i=0;i<G;i++){const c=Math.cos(dj*TH[i]); let q=c*c; q=Math.min(Math.max(q,1e-12),1-1e-12); ll[i]+=k===0?Math.log(q):Math.log(1-q);}
+  hist.push({j,k}); step++;
+  if(step>=seq.length) recordRun();
+  return true;
+}
+function recordRun(){
+  if(recorded) return; recorded=true;
+  const key=`${r} @ ${nmax}`; if(!tally[key]){tally[key]={runs:0,wrong:0,cat:0}; tallyOrder.push(key);}
+  const te=estimate(); const dev=Math.abs(te-thTrue); const t=tally[key]; t.runs++; if(dev>w) t.wrong++; if(dev>10*w) t.cat++;
+}
+function renderScore(){
+  const tb=$('score').querySelector('tbody'); tb.innerHTML='';
+  const cur=`${r} @ ${nmax}`;
+  for(const key of tallyOrder){const t=tally[key]; const tr=document.createElement('tr'); if(key===cur) tr.className='cur';
+    const pct=(n)=>t.runs? ` <span class="rate">${(100*n/t.runs).toFixed(0)}%</span>`:'';
+    tr.innerHTML=`<td>${key}</td><td>${t.runs}</td><td class="${t.wrong?'bad':''}">${t.wrong}${pct(t.wrong)}</td><td class="${t.cat?'bad':''}">${t.cat}${pct(t.cat)}</td>`; tb.appendChild(tr);}
+  if(!tallyOrder.length){const tr=document.createElement('tr'); tr.innerHTML='<td colspan="4" class="rate">no completed runs yet</td>'; tb.appendChild(tr);}
+}
+function loglikAt(th){let s=0; for(const {j,k} of hist){const c=Math.cos(d[j]*th); let q=Math.min(Math.max(c*c,1e-12),1-1e-12); s+=k===0?Math.log(q):Math.log(1-q);} return s;}
+function estimate(){
+  let g=0; for(let i=1;i<G;i++) if(ll[i]>ll[g]) g=i;
+  let th=TH[g];
+  if(g>0&&g<G-1){const y0=ll[g-1],y1=ll[g],y2=ll[g+1],den=y0-2*y1+y2; if(den<0){const off=0.5*(y0-y2)/den; th=TH[g]+Math.max(-0.5,Math.min(0.5,off))*(TH[1]-TH[0]);}}
+  // zoom refine on exact loglik
+  const h=(TH[1]-TH[0]); let best=th, bv=loglikAt(th);
+  for(let t=-12;t<=12;t++){const x=th+t*h/12; const v=loglikAt(x); if(v>bv){bv=v;best=x;}}
+  return best;
+}
+function aliveCount(){
+  if(hist.length===0) return depths.length? '—':'—';
+  let mx=-Infinity; for(let i=0;i<G;i++) if(ll[i]>mx) mx=ll[i];
+  let n=0; const thr=mx+Math.log(0.01);
+  for(let i=1;i<G-1;i++) if(ll[i]>thr && ll[i]>=ll[i-1] && ll[i]>ll[i+1]) n++;
+  return n;
+}
+function sizeCanvas(cv){const dpr=window.devicePixelRatio||1; const H=+cv.dataset.h; cv.style.height=H+'px'; const W=cv.clientWidth; cv.width=W*dpr; cv.height=H*dpr; const ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); return {ctx,W,H};}
+function axes(ctx,W,H,pad){ctx.strokeStyle=tok('--grid'); ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(pad.l,H-pad.b+.5); ctx.lineTo(W-pad.r,H-pad.b+.5); ctx.stroke();}
+function drawFringe(){
+  const {ctx,W,H}=sizeCanvas(cvF); ctx.clearRect(0,0,W,H); const pad={l:8,r:8,t:8,b:18}; axes(ctx,W,H,pad);
+  const last=hist[hist.length-1]; const j=last?last.j:seq[0]; const n=depths[j]; const k=last?last.k:null;
+  const x=th=>pad.l+(th/(Math.PI/2))*(W-pad.l-pad.r); const y=v=>H-pad.b-v*(H-pad.t-pad.b);
+  ctx.strokeStyle=tok('--rung'); ctx.fillStyle=tok('--rungfill'); ctx.lineWidth=1.5; ctx.beginPath();
+  const M=Math.min(G,2400);
+  for(let i=0;i<M;i++){const th=(i+.5)*(Math.PI/2)/M; let v=p(n,th); if(k===1) v=1-v; const X=x(th),Y=y(v); if(i===0) ctx.moveTo(X,Y); else ctx.lineTo(X,Y);}
+  ctx.stroke(); ctx.lineTo(x(Math.PI/2),y(0)); ctx.lineTo(x(0),y(0)); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle=tok('--truth'); ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(x(thTrue),pad.t); ctx.lineTo(x(thTrue),H-pad.b); ctx.stroke();
+  ctx.fillStyle=tok('--muted'); ctx.font='11px "IBM Plex Mono",monospace'; ctx.fillText('0',pad.l,H-4); ctx.fillText('π/2',W-pad.r-22,H-4);
+  $('shotLabel').textContent = last ? `depth ${n}: outcome ${k}, this shot favors θ where the curve is high` : `first shot will be at depth ${n}`;
+}
+function drawLik(cv,label,lo,hi,zoomed){
+  const {ctx,W,H}=sizeCanvas(cv); ctx.clearRect(0,0,W,H); const pad={l:8,r:8,t:10,b:20}; axes(ctx,W,H,pad);
+  const x=th=>pad.l+((th-lo)/(hi-lo))*(W-pad.l-pad.r); const y=v=>H-pad.b-v*(H-pad.t-pad.b);
+  // basin ticks in zoom
+  if(zoomed){ctx.strokeStyle=tok('--grid'); ctx.lineWidth=1; const k0=Math.floor(lo/w); for(let k=k0;k*w<=hi;k++){const X=x(k*w); ctx.beginPath(); ctx.moveTo(X,pad.t); ctx.lineTo(X,H-pad.b); ctx.stroke();}}
+  let mx=-Infinity; for(let i=0;i<G;i++) if(ll[i]>mx) mx=ll[i];
+  ctx.strokeStyle=tok('--lik'); ctx.fillStyle=tok('--likfill'); ctx.lineWidth=zoomed?1.8:1.2; ctx.beginPath();
+  let first=true;
+  if(zoomed){const M=700; for(let i=0;i<=M;i++){const th=lo+(hi-lo)*i/M; if(th<=0||th>=Math.PI/2) continue; const v=Math.exp(loglikAt(th)-mx); const X=x(th),Y=y(v); if(first){ctx.moveTo(X,Y);first=false;} else ctx.lineTo(X,Y);}}
+  else{for(let i=0;i<G;i++){const v=Math.exp(ll[i]-mx); const X=x(TH[i]),Y=y(v); if(first){ctx.moveTo(X,Y);first=false;} else ctx.lineTo(X,Y);}}
+  ctx.stroke(); ctx.lineTo(x(hi),y(0)); ctx.lineTo(x(lo),y(0)); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle=tok('--truth'); ctx.lineWidth=1.5; ctx.setLineDash([]); ctx.beginPath(); ctx.moveTo(x(thTrue),pad.t); ctx.lineTo(x(thTrue),H-pad.b); ctx.stroke();
+  if(hist.length){const te=estimate(); ctx.strokeStyle=tok('--lik'); ctx.setLineDash([4,3]); ctx.beginPath(); ctx.moveTo(x(te),pad.t); ctx.lineTo(x(te),H-pad.b); ctx.stroke(); ctx.setLineDash([]);}
+  ctx.fillStyle=tok('--muted'); ctx.font='11px "IBM Plex Mono",monospace';
+  if(zoomed){ctx.fillText('−4w',pad.l,H-5); ctx.fillText('truth',x(thTrue)-14,H-5); ctx.fillText('+4w',W-pad.r-24,H-5);} else {ctx.fillText('θ = 0',pad.l,H-5); ctx.fillText('π/2',W-pad.r-22,H-5);}
+  $(label).textContent = hist.length? `${hist.length} shot${hist.length>1?'s':''} folded in` : 'flat: no data yet';
+}
+function renderLadder(){
+  const el=$('ladder'); el.innerHTML='';
+  const taken=depths.map(()=>[]); for(const {j,k} of hist) taken[j].push(k);
+  const active=hist.length? hist[hist.length-1].j : (seq.length? seq[0]:-1);
+  for(let j=depths.length-1;j>=0;j--){
+    const row=document.createElement('div'); row.className='rung'+(j===active?' active':'');
+    const n=document.createElement('div'); n.className='n'; n.textContent=depths[j]; row.appendChild(n);
+    const pips=document.createElement('div'); pips.className='pips';
+    for(let k=0;k<shots[j];k++){const s=document.createElement('span'); s.className='pip'+(k<taken[j].length?(' k'+taken[j][k]):''); s.title=k<taken[j].length?('outcome '+taken[j][k]):'not yet'; pips.appendChild(s);}
+    row.appendChild(pips); el.appendChild(row);
+  }
+}
+function readouts(){
+  $('rShots').textContent=`${hist.length} / ${seq.length}`;
+  const used=hist.reduce((s,{j})=>s+depths[j]+(depths[j]===0?1:0),0);
+  $('rQ').textContent=`${used} / ${Ntot}`;
+  $('rA').textContent=aTrue.toFixed(4); $('rW').textContent=w.toExponential(2)+' rad';
+  if(hist.length){const te=estimate(); const ah=Math.sin(te); const err=Math.abs(ah-aTrue);
+    $('rAhat').textContent=ah.toFixed(4); $('rErr').textContent=err.toExponential(2);
+    const flip=Math.abs(te-thTrue)>w; const far=Math.abs(te-thTrue)>10*w;
+    $('rFlip').innerHTML=flip?`<span class="chip no">${far?'catastrophic':'wrong basin'}</span>`:`<span class="chip ok">in the true basin</span>`;
+  } else {$('rAhat').textContent='–'; $('rErr').textContent='–'; $('rFlip').innerHTML='<span class="chip wait">waiting</span>';}
+  $('rAlive').textContent = hist.length? aliveCount() : '–';
+}
+function drawAll(){renderScore(); drawFringe(); drawLik(cvL,'fullLabel',0,Math.PI/2,false); drawLik(cvZ,'zoomLabel',thTrue-4*w,thTrue+4*w,true); renderLadder(); readouts();}
+function stepOnce(){ if(takeShot()) drawAll(); else stopPlay(); }
+function stopPlay(){ if(timer){clearInterval(timer); timer=null;} $('btnPlay').textContent='Play'; }
+function play(){ if(timer){stopPlay(); return;} $('btnPlay').textContent='Pause'; timer=setInterval(()=>{ if(!takeShot()){stopPlay();} drawAll(); }, Math.round(1200/speed)); }
+function seg(id,cb){ const el=$(id); el.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{ el.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed','false')); b.setAttribute('aria-pressed','true'); cb(b.dataset.v); })); }
+seg('segR',v=>{r=+v; reset(false);}); seg('segN',v=>{nmax=+v; reset(false);}); seg('segO',v=>{order=v; reset(false);});
+$('aRange').addEventListener('input',e=>{aTrue=+e.target.value; $('aVal').textContent=aTrue.toFixed(3); thTrue=Math.asin(aTrue); ll.fill(0); hist=[]; step=0; stopPlay(); drawAll();});
+$('speed').addEventListener('input',e=>{speed=+e.target.value; if(timer){stopPlay(); play();}});
+$('btnStep').addEventListener('click',stepOnce); $('btnPlay').addEventListener('click',play);
+$('btnAll').addEventListener('click',()=>{stopPlay(); while(takeShot()){} drawAll();});
+$('btnReset').addEventListener('click',()=>reset(true));
+$('btnBatch').addEventListener('click',()=>{stopPlay(); for(let i=0;i<50;i++){resetState(true); while(takeShot()){}} $('aRange').value=aTrue; $('aVal').textContent=aTrue.toFixed(3); renderLadder(); drawAll();});
+$('btnClear').addEventListener('click',()=>{tally={}; tallyOrder=[]; renderScore();});
+window.addEventListener('resize',drawAll);
+const mq=window.matchMedia('(prefers-color-scheme: dark)'); mq.addEventListener&&mq.addEventListener('change',drawAll);
+new MutationObserver(drawAll).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+reset(false);
+// open in a working state: the deepest rung's shot and two more already folded in
+takeShot(); takeShot(); takeShot(); drawAll();
+})();
+</script>
+
+<footer style="max-width:1180px;margin:0 auto;padding:0 22px 40px;color:var(--muted);font-size:12px">
+Companion to <i>Quantum amplitude estimation beyond power-of-two schedules</i> (F. Labib, 2026). Source and data: <a href="https://github.com/unitaryfoundation/csAE" style="color:inherit">github.com/unitaryfoundation/csAE</a>. Everything runs in your browser; no data leaves the page.
+</footer>
+</body>
+</html>

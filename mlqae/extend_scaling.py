@@ -11,7 +11,6 @@ nmax ~ 2e5, where the likelihood grid holds ~3.4e6 points.
 import os
 os.environ['OPENBLAS_NUM_THREADS'] = '8'
 import sys
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
 import pickle

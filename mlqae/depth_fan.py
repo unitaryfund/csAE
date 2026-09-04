@@ -7,7 +7,7 @@ M ~ N^beta selects any intermediate power N^-(1+beta)/2.
 import os
 os.environ['OPENBLAS_NUM_THREADS'] = '4'
 import sys
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
 import pickle
 from mlqae import geom_ladder, canonical_shots, evaluate_schedule

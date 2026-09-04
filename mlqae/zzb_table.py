@@ -19,12 +19,12 @@ the ones quoted in the appendix; coarsening each grid 2x and the Monte Carlo
 CRLB column of Table V is printed alongside; the achieved column is Table I.
 Runtime ~15 min for both scales.
 
-Run from the repository root: python research/zzb_table.py
+Run from the repository root: python mlqae/zzb_table.py
 """
 import os
 os.environ.setdefault('OPENBLAS_NUM_THREADS', '4')
 import sys
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import time
 import numpy as np
 from mlqae import flagship_schedule, crlb_constant

@@ -1,6 +1,6 @@
 import numpy as np
-from frequencyestimator import *
-from util import *
+from .frequencyestimator import *
+from .util import *
 import ast
 
 def estimate_amplitude(ula_signal, heavy_signs, adjacency=2):
@@ -30,7 +30,23 @@ def objective_function(lp, cos_signal, abs_sin, ula_signal, esprit):
 
     theta_est = apply_correction(ula_signal, theta_est)
 
-    # print(f'2*theta_est: {2*theta_est}')
+    p_same = np.cos((2 * ula_signal.depths + 1) * (theta_est)) ** 2
+    k = np.asarray(ula_signal.n_samples) * np.asarray(ula_signal.measurements)
+    obj = -binom_loglikelihood_floor(k, ula_signal.n_samples, p_same)
+
+    # eigs = np.abs(esprit.eigs)[:2]
+    # obj = eigs[1] - eigs[0]
+
+    return obj
+
+
+def objective_function_legacy(lp, cos_signal, abs_sin, ula_signal, esprit):
+    signal = cos_signal + 1.0j * lp * abs_sin
+    R = ula_signal.get_cov_matrix_toeplitz(signal)
+    theta_est, _ = esprit.estimate_theta_toeplitz(R)
+
+    theta_est = apply_correction_legacy(ula_signal, theta_est)
+
     p_same = np.cos((2 * ula_signal.depths + 1) * (theta_est)) ** 2
 
     obj = -np.sum(
@@ -38,10 +54,6 @@ def objective_function(lp, cos_signal, abs_sin, ula_signal, esprit):
             [1e-75 + binom.pmf(ula_signal.n_samples[kk] * ula_signal.measurements[kk], ula_signal.n_samples[kk], p_same[kk]) for kk
              in
              range(len(ula_signal.n_samples))]))
-
-
-    # eigs = np.abs(esprit.eigs)[:2]
-    # obj = eigs[1] - eigs[0]
 
     return obj
 
@@ -219,7 +231,7 @@ def minimize_obj(all_signs, cos_signal, abs_sin, ula_signal, esprit, disp):
 
 
 def csae_with_local_minimization(ula_signal, esprit, heavy_signs, sample=False, correction=False, optimize=False,
-                                 disp=False, adjacency=2):
+                                 disp=False, adjacency=2, sample_size=3):
     """
     Perform CSAE (Compressive Sensing Angle Estimation) with local minimization.
 
@@ -261,7 +273,7 @@ def csae_with_local_minimization(ula_signal, esprit, heavy_signs, sample=False, 
 
     if sample:
         # step 1: sample signs from learned sign distribution
-        signs_to_try = sample_signs(heavy_signs=heavy_signs, sample_size=3)
+        signs_to_try = sample_signs(heavy_signs=heavy_signs, sample_size=sample_size)
         avals = list(heavy_signs.keys())
 
         if optimize:

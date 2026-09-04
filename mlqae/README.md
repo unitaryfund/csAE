@@ -1,6 +1,6 @@
 # Dense-ladder maximum-likelihood amplitude estimation
 
-Research code and paper draft for the follow-up to csAE (arXiv:2405.14697):
+Code and paper source for arXiv:2609.02715, the follow-up to csAE (arXiv:2405.14697):
 same measurement framework (Grover-depth schedules, Z-basis measurements only,
 non-adaptive / fully parallel), two changes:
 
@@ -44,26 +44,26 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt        # numpy scipy matplotlib numba statsmodels seaborn
 ```
 
-`research/` itself needs only numpy, scipy, matplotlib, and (for the chebAE
-comparisons) statsmodels; numba and seaborn are used by the parent csAE code.
+`mlqae/` itself needs only numpy, scipy, matplotlib, and (for the chebAE
+comparisons) statsmodels; numba and seaborn are used by the sibling `csae/` package.
 
 **Run every script from the repository root**, e.g.
-`python research/head_to_head.py`.
+`python mlqae/head_to_head.py`.
 
 ## Dependence on csAE tools
 
-The folder is self-contained except for two deliberate uses of the parent
-repository:
+The package is self-contained except for two deliberate uses of the rest of
+the repository:
 
 - `head_to_head.py` and `extend_scaling.py` import **`chebAE.py`** (the
   repository's copy of the Rall–Fuller reference implementation) for the
   matched comparisons.
-- `compare_to_csae.py` imports **`csae.py`, `util.py`, `signals.py`,
-  `frequencyestimator.py`** to run the published csAE pipeline on paired
-  trials. It requires the sign-learning version of these modules (present on
-  this branch; not in pre-2024 history).
+- `compare_to_csae.py` imports the sibling **`csae/`** package (`estimator.py`,
+  `util.py`, `signals.py`, `frequencyestimator.py`) to run the published csAE
+  pipeline on paired trials. It requires the sign-learning version of these
+  modules (present on this branch; not in pre-2024 history).
 
-Everything else (`mlqae.py` and the schedule/ladder studies) uses only
+Everything else (`core.py` and the schedule/ladder studies) uses only
 numpy/scipy.
 
 ## Reproducing the paper's tables and figures
@@ -78,7 +78,7 @@ threads per script), one script at a time. The whole set is ~7 minutes plus two 
 | paper artifact | script(s) | output | runtime |
 |---|---|---|---|
 | Table I (flagship scales), cap-rung variant, Table IV (noise) | `final_numbers.py` | `paper_numbers.pkl` + printed tables | 55 s |
-| Table III + Sec. VI.B anchored-design constants | `depth_tradeoff.py` (stages 1–4; `python research/depth_tradeoff.py 4` for Table III only) | `depth_tradeoff.pkl` | 59 s |
+| Table III + Sec. VI.B anchored-design constants | `depth_tradeoff.py` (stages 1–4; `python mlqae/depth_tradeoff.py 4` for Table III only) | `depth_tradeoff.pkl` | 59 s |
 | Sec. V / VI.B tail numbers (stage-1 stall at ε95·M ≈ 0.14–0.28, pair-anchor thin tails, uniform-scaling clean tails) | `depth_tails.py` | `depth_tails.pkl` + printed table | ~4 min |
 | Table II + Fig. 3 data (head-to-head vs chebAE) | `head_to_head.py`, then `extend_scaling.py` | `head_to_head.pkl`, `head_to_head_ext.pkl` | 70 s + 156 s |
 | Table V (Ziv–Zakai bound columns; achieved column = Table I) | `zzb_table.py` | printed table | ~15 min |
@@ -90,7 +90,7 @@ threads per script), one script at a time. The whole set is ~7 minutes plus two 
 | Fig. 4 data (depth-limited fan) | `depth_fan.py` | `depth_fan.pkl` | 9 s |
 | Sec. III paired numbers (csAE 4.37 vs polish 4.06 vs global ML 3.92) | `compare_to_csae.py` | printed | 158 s |
 | Figures (PDFs in `paper/figures/`) | `make_figures.py` (after the data scripts above) | `ratio_sweep.pdf`, `alias_exponent.pdf`, `scaling.pdf`, `depth_fan.pdf` | seconds |
-| The paper itself | `cd research/paper && pdflatex main && bibtex main && pdflatex main && pdflatex main` | `main.pdf` | seconds |
+| The paper itself | `cd mlqae/paper && pdflatex main && bibtex main && pdflatex main && pdflatex main` | `main.pdf` | seconds |
 
 Order matters only in two places: `extend_scaling.py` reads
 `head_to_head.pkl`, and `make_figures.py` reads the data pickles (it prefers
@@ -104,11 +104,11 @@ widths within ~1% of `pi sqrt(Lambda)` for s ≥ 16 and basin-level disagreement
 rates of order 1e-3 with sub-0.1-nat likelihood gaps; `head_to_head.py` prints
 `nmax=125 … C95=2.82…2.87` for the flagship and `C_ave≈3.1` for chebAE at the
 matched target; `compare_to_csae.py`'s csAE column reproduces the r=3 row of
-`sims/csae_C4.000_mc0500.pkl` trial-for-trial.
+`csae/sims/csae_C4.000_mc0500.pkl` trial-for-trial.
 
 ## Files
 
-- `mlqae.py` — the core evaluator: ladders, canonical shots, the coarse-grid
+- `core.py` (imported as `mlqae`) — the core evaluator: ladders, canonical shots, the coarse-grid
   spacing rule of Appendix A, vectorized global-ML simulation (with noise model
   and local zoom refinement), bootstrap CIs.
 - `test_mlqae.py` — validation suite (~10 s); every test checks the code

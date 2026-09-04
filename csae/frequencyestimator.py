@@ -1,7 +1,8 @@
 import numpy as np
 from numba import njit, objmode
-from abc import ABCMeta, abstractmethod 
+from abc import ABCMeta, abstractmethod
 from scipy.linalg import matmul_toeplitz
+import scipy.fft as sfft_module
 
 
 @njit
@@ -85,6 +86,60 @@ def Lanczost( A, v, m=100):
     return T, V
 
 
+def _toeplitz_fft_prep(c):
+    """Precompute the circulant spectrum for the Hermitian Toeplitz matrix with
+    first column c and first row conj(c). Returns (spectrum, fft_len, n).
+    The FFT length is padded to a 5-smooth size (next_fast_len); a plain 2n
+    can be 2x a prime, which forces pocketfft into slow Bluestein transforms."""
+    n = len(c)
+    mfft = sfft_module.next_fast_len(2 * n - 1, real=False)
+    f = np.zeros(mfft, dtype=np.complex128)
+    f[:n] = c
+    f[mfft - (n - 1):] = np.conj(c[1:])[::-1]
+    return sfft_module.fft(f), mfft, n
+
+
+def _lanczos_toeplitz_fast(c, v0, m=100):
+    """Same Lanczos recursion as Lanczost, but with the circulant embedding
+    FFT'd once and matvecs done as two FFTs against the cached spectrum."""
+    Ff, mfft, n = _toeplitz_fft_prep(c)
+
+    def matvec(v):
+        return sfft_module.ifft(Ff * sfft_module.fft(v, mfft), overwrite_x=True)[:n]
+
+    if m > n: m = n
+    V = np.zeros((m, n), dtype=np.complex128)
+    T = np.zeros((m, m), dtype=np.complex128)
+    V[0, :] = v0
+
+    w = matvec(v0)
+    alfa = np.dot(np.conj(w), v0)
+    w = w - alfa * v0
+    T[0, 0] = alfa
+
+    for j in range(1, m - 1):
+        beta = np.linalg.norm(w)
+        V[j, :] = w / beta
+
+        # Re-orthogonalize against V[0..j-2] (same set as the legacy code,
+        # batched into one matmul instead of a Python loop). conj(V) @ w is
+        # computed as conj(V @ conj(w)) to avoid conjugate-copying the matrix.
+        if j > 1:
+            coeffs = np.conj(V[:j - 1] @ np.conj(V[j, :]))
+            V[j, :] = V[j, :] - coeffs @ V[:j - 1]
+        V[j, :] = V[j, :] / np.linalg.norm(V[j, :])
+
+        w = matvec(V[j, :])
+        alfa = np.dot(np.conj(w), V[j, :])
+        w = w - alfa * V[j, :] - beta * V[j - 1, :]
+
+        T[j, j] = alfa
+        T[j - 1, j] = beta
+        T[j, j - 1] = beta
+
+    return T, V
+
+
 class EstimateFrequency(metaclass = ABCMeta):
     
     @abstractmethod
@@ -126,34 +181,37 @@ class EstimateFrequency(metaclass = ABCMeta):
         self.S.reshape((np.shape(self.S)[1], np.shape(self.S)[0]))
         
         
-    def _eig_decomp_lanczost(self, n=1, m=100):
+    def _eig_decomp_lanczost(self, n=1, m=100, fast=True):
         v0   = np.array(np.random.rand( np.shape(self.R)[0]) + 1.0j*np.random.rand( np.shape(self.R)[0]), dtype=np.complex128); v0 /= np.sqrt( np.abs(np.dot( v0, np.conjugate(v0) ) ) )
-        T, V = Lanczost( self.R, v0, m=m )
+        if fast:
+            T, V = _lanczos_toeplitz_fast(self.R, v0, m=m)
+        else:
+            T, V = Lanczost( self.R, v0, m=m )
 
         esT, vsT = np.linalg.eigh( T )
         esT_sort_idx = np.argsort(esT)[::-1]
         lm_eig = np.matrix(V.T @ (vsT[:, esT_sort_idx[:n].squeeze() ]))
-        
+
         # Form S and G
         self.S = np.matrix(lm_eig)
         self.eigs = esT[esT_sort_idx]
 
 
 class ESPIRIT(EstimateFrequency):
-    
-    def __init__(self):
-        pass
-    
+
+    def __init__(self, fast=True):
+        self.fast = fast
+
     def estimate_theta_toeplitz(self, R, n=2, p0mp1=1.0):
         return self.estimate_theta(R, True, True, n=2, p0mp1=p0mp1)
-    
+
     def estimate_theta(self, R, lanczos=False, lanczos_toeplitz=False, n=2, p0mp1=1.0):
 
         self.R = R
-        if lanczos:   
+        if lanczos:
             self.R = np.ascontiguousarray(self.R, dtype=np.complex128)
             if lanczos_toeplitz:
-                self._eig_decomp_lanczost(n, m=50)
+                self._eig_decomp_lanczost(n, m=50, fast=getattr(self, 'fast', True))
             else:
                 self._eig_decomp_lanczos(n, m=100)
         else:

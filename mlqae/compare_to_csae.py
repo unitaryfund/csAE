@@ -8,7 +8,7 @@ scores three estimators per trial:
   2. csAE + ML polish (1-D likelihood refinement around the csAE estimate)
   3. global ML (exact likelihood over all basins; no signs, no ESPRIT)
 
-Run from the repository root: python research/compare_to_csae.py
+Run from the repository root: python mlqae/compare_to_csae.py
 """
 import os
 os.environ['OPENBLAS_NUM_THREADS'] = '1'
@@ -18,10 +18,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
 import multiprocessing
 from scipy.optimize import minimize_scalar
-from signals import TwoqULASignal
-from frequencyestimator import ESPIRIT
-from csae import get_heavy_signs, csae_with_local_minimization
-from util import simulate_signal
+from csae.signals import TwoqULASignal
+from csae.frequencyestimator import ESPIRIT
+from csae.estimator import get_heavy_signs, csae_with_local_minimization
+from csae.util import simulate_signal
 
 R = 3
 

@@ -77,18 +77,51 @@ class TwoqULASignal(ULASignal):
         return covariance_matrix
     
 
-    def get_cov_matrix_toeplitz(self, signal):
+    def _build_gather(self):
         '''
-        This generates R tilde of DOI: 10.1109/LSP.2015.2409153 and only stores a column and row, which entirely 
+        Precompute gather indices reproducing get_ula_signal exactly: at each
+        level, element k of np.outer(p, cp).T.ravel() equals p[k % len(p)] *
+        cp[k // len(p)], so the post-selection array can be formed by direct
+        indexing without materializing the O(N^2) outer product.
+        '''
+        N = len(self.depths)
+        gather = []
+        k0 = np.asarray(self.idx[0])
+        gather.append((k0 % N, k0 // N))
+        L_cp = len(k0)      # cp = conj(p) is fixed at the level-0 selection
+        L_cur = len(k0)
+        for i in range(1, self.q):
+            ki = np.asarray(self.idx[i])
+            gather.append((ki % L_cur, ki // L_cur))
+            L_cur = len(ki)
+        return gather
+
+    def get_ula_signal_fast(self, signal):
+        if not hasattr(self, '_gather'):
+            self._gather = self._build_gather()
+        b0, a0 = self._gather[0]
+        cs = np.conj(signal)
+        p = signal[b0] * cs[a0]
+        cp = np.conj(p)
+        for b, a in self._gather[1:]:
+            p = p[b] * cp[a]
+        return p
+
+    def get_cov_matrix_toeplitz(self, signal, fast=True):
+        '''
+        This generates R tilde of DOI: 10.1109/LSP.2015.2409153 and only stores a column and row, which entirely
         defines a Toeplitz matrix
         '''
-        self.ULA_signal = get_ula_signal(self.q, self.idx, signal)
+        if fast:
+            self.ULA_signal = self.get_ula_signal_fast(signal)
+        else:
+            self.ULA_signal = get_ula_signal(self.q, self.idx, signal)
         total_size = len(self.ULA_signal)
         ULA_signal = self.ULA_signal
-        
+
         subarray_col = ULA_signal[total_size//2:]
         subarray_row = np.conj(subarray_col)
-        
+
         return subarray_col
     
     def get_idx(self):

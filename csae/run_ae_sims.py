@@ -1,6 +1,6 @@
 # Used to generate data for figures. Run the following commands. Each run takes about 7 hours for a single command to run with 12 threads on a server.
-# python run_ae_sims.py --save --dir=sims/ --nthreads=12 --num_lengths=6 --C=4 --adjacency=5 --num_mc=500
-# python run_ae_sims.py --save --dir=sims/ --nthreads=12 --num_lengths=6 --C=8 --adjacency=5 --num_mc=500
+# python csae/run_ae_sims.py --save --dir=csae/sims/ --nthreads=12 --num_lengths=6 --C=4 --adjacency=5 --num_mc=500
+# python csae/run_ae_sims.py --save --dir=csae/sims/ --nthreads=12 --num_lengths=6 --C=8 --adjacency=5 --num_mc=500
 
 
 import os
@@ -8,10 +8,9 @@ os.environ['OPENBLAS_NUM_THREADS'] = '1'
 os.environ['MKL_NUM_THREADS']='1'
 
 import numpy as np
-from signals import *
-from frequencyestimator import *
-from csae import *
-from util import *
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # repo root
+from csae import *  # noqa: E402,F403
 import time
 import multiprocessing
 import pickle

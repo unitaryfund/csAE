@@ -12,7 +12,7 @@ C95 up ~2%, C68 up ~9% at nmax = 125 and 382).
 import os
 os.environ.setdefault('OPENBLAS_NUM_THREADS', '4')
 import sys
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
 from mlqae import flagship_schedule, grid_spacing, boot_ci_constant
 

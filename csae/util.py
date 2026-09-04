@@ -1,7 +1,28 @@
 import numpy as np
 from scipy.stats import binom
+from scipy.special import gammaln, xlogy, xlog1py
 import itertools
 from typing import List
+
+_LOG_FLOOR = np.log(1e-75)
+
+
+def binom_loglikelihood_floor(k, n, P):
+    """Vectorized replacement for sum(log(1e-75 + binom.pmf(k, n, p))).
+
+    k, n: arrays of shape (d,) with the observed counts and shot numbers.
+    P: probabilities, shape (d,) or (h, d) for h hypotheses at once.
+    Returns the summed log-likelihood over the last axis, including the same
+    1e-75 floor as the original scalar-scipy implementation (via logaddexp),
+    so results agree with the legacy code to floating-point precision.
+    """
+    k = np.asarray(k, dtype=float)
+    n = np.asarray(n, dtype=float)
+    P = np.asarray(P, dtype=float)
+    logC = gammaln(n + 1) - gammaln(k + 1) - gammaln(n - k + 1)
+    # xlogy/xlog1py handle the k=0, p=0 and k=n, p=1 corners (0*log 0 = 0)
+    logpmf = logC + xlogy(k, P) + xlog1py(n - k, -P)
+    return np.sum(np.logaddexp(_LOG_FLOOR, logpmf), axis=-1)
 
 def simulate_signal(depths, n_samples, theta, eta=0.0):
     P0 = lambda n, theta: np.cos((2 * n + 1) * theta) ** 2
@@ -45,6 +66,25 @@ def simulate_signal(depths, n_samples, theta, eta=0.0):
     return signals, measurements
 
 def apply_correction(ula_signal, theta_est):
+    """Vectorized version of apply_correction_legacy (identical selection rule)."""
+    theta_est = np.abs(theta_est)
+    d = 2 * np.asarray(ula_signal.depths) + 1
+    # Candidate angles, in the same order as the legacy argmax:
+    # [same, s2, s4, o2, o4, s2_o2, s4_o2]
+    cand = np.array([theta_est,
+                     np.pi / 2 - theta_est,
+                     np.pi / 4 - theta_est,
+                     theta_est / 2,
+                     theta_est / 4,
+                     np.pi / 2 - 0.5 * theta_est,
+                     np.pi / 4 - 0.5 * theta_est])
+    P = np.cos(np.outer(cand, d)) ** 2
+    k = np.asarray(ula_signal.n_samples) * np.asarray(ula_signal.measurements)
+    ll = binom_loglikelihood_floor(k, ula_signal.n_samples, P)
+    return np.abs(cand[np.argmax(ll)])
+
+
+def apply_correction_legacy(ula_signal, theta_est):
     theta_est = np.abs(theta_est)
     p_o2 = np.cos((2 * ula_signal.depths + 1) * (theta_est / 2.0)) ** 2
     p_o4 = np.cos((2 * ula_signal.depths + 1) * (theta_est / 4.0)) ** 2

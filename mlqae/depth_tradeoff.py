@@ -32,12 +32,12 @@ a cascade of degeneracy mechanisms:
                       Ctilde95 over stage 2 buys exponential (rather than
                       polynomial) tail suppression.
 
-Run: python research/depth_tradeoff.py [stage]   (default: all stages)
+Run: python mlqae/depth_tradeoff.py [stage]   (default: all stages)
 """
 import os
 os.environ['OPENBLAS_NUM_THREADS'] = '4'
 import sys
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
 import pickle
 from mlqae import (geom_ladder, canonical_shots, evaluate_schedule,

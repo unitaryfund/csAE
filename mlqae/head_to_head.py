@@ -22,7 +22,6 @@ All constants come with nonparametric bootstrap 95% CIs.
 import os
 os.environ['OPENBLAS_NUM_THREADS'] = '4'
 import sys
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
 import pickle

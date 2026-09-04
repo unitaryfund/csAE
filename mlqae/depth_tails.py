@@ -24,12 +24,12 @@ constants themselves):
 A "far flip" is a trial whose theta error exceeds two deepest-level basin
 widths 2 * pi/(2(2M+1)). Runtime ~4 minutes; ~2 GB peak (block C, M=256).
 
-Run from the repository root: python research/depth_tails.py
+Run from the repository root: python mlqae/depth_tails.py
 """
 import os
 os.environ['OPENBLAS_NUM_THREADS'] = '4'
 import sys
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
 import pickle
 from mlqae import geom_ladder, canonical_shots, evaluate_schedule, KAPPA

@@ -1,7 +1,7 @@
-"""Validation tests for the research code (mlqae.py and friends).
+"""Validation tests for the ladder code (mlqae/core.py and friends).
 
-Run:  python research/test_mlqae.py        (plain runner, no dependencies)
-  or: pytest research/test_mlqae.py        (if pytest is available)
+Run:  python mlqae/test_mlqae.py        (plain runner, no dependencies)
+  or: pytest mlqae/test_mlqae.py        (if pytest is available)
 
 Philosophy: every test checks the implementation against something it did not
 define itself -- an analytic limit, an independently derived bound, a published
@@ -13,7 +13,7 @@ import os
 os.environ.setdefault('OPENBLAS_NUM_THREADS', '4')
 import sys
 import unittest  # SkipTest: recognized as a skip by the runner below and by pytest
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
 from mlqae import (geom_ladder, canonical_shots, grid_spacing,
                    crlb_constant, KAPPA, flagship_schedule, evaluate_schedule)

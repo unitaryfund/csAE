@@ -16,14 +16,14 @@ Produces every number quoted in Appendix A of the paper:
 
 Run from the repository root, with the venv active:
 
-    source .venv/bin/activate && python research/grid_resolution.py
+    source .venv/bin/activate && python mlqae/grid_resolution.py
 
 Runtime ~50 s on a ~10-core laptop.
 """
 import os
 os.environ['OPENBLAS_NUM_THREADS'] = '4'
 import sys
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
 import pickle
 from mlqae import geom_ladder, canonical_shots, grid_spacing, evaluate_schedule

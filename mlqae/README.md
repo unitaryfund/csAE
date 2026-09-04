@@ -1,6 +1,8 @@
 # Dense-ladder maximum-likelihood amplitude estimation
 
-Code and paper source for arXiv:2609.02715, the follow-up to csAE (arXiv:2405.14697):
+**Paper:** [arXiv:2609.02715](https://arxiv.org/abs/2609.02715) · **Live demo:** https://unitaryfoundation.github.io/csAE/
+
+Code and paper source for [arXiv:2609.02715](https://arxiv.org/abs/2609.02715), the follow-up to csAE (arXiv:2405.14697):
 same measurement framework (Grover-depth schedules, Z-basis measurements only,
 non-adaptive / fully parallel), two changes:
 
@@ -150,8 +152,7 @@ matched target; `compare_to_csae.py`'s csAE column reproduces the r=3 row of
 the likelihood over θ is drawn shot by shot as a geometric ladder is measured,
 with a zoom on the rival basins, a scoreboard of wrong-basin runs, and
 switches for r ∈ {1.25, 1.45, 2}, n_max, and shot order. Open the file
-directly in a browser, or serve it with GitHub Pages (Settings → Pages →
-branch `main`, folder `/docs`), after which it is at
+directly in a browser, or use the GitHub Pages copy at
 https://unitaryfoundation.github.io/csAE/.
 
 ## Caveats / open items

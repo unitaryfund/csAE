@@ -9,7 +9,9 @@ Two non-adaptive amplitude-estimation algorithms live in this repository. Both m
 | Estimator | ESPRIT on a sparse virtual array | exact global maximum likelihood (one matrix product) |
 | Constants at 95% | 4.3/ε total, 0.26/ε sequential depth | 2.8–3.1/ε total, 0.21/ε sequential depth |
 | Where | [`csae/`](csae/): `estimator.py`, `csAE_example.ipynb`, `plots.ipynb` | [`mlqae/`](mlqae/) with its own [README](mlqae/README.md); core module `mlqae/core.py` |
-| Live demo | — | [`docs/index.html`](docs/index.html) (open in a browser, or via GitHub Pages) |
+| Live demo | — | https://unitaryfoundation.github.io/csAE/ (source: [`docs/index.html`](docs/index.html)) |
+
+Live demo of the ladder mechanism: **https://unitaryfoundation.github.io/csAE/**
 
 The rest of this file documents csAE, which lives in the `csae/` package (import it from the repository root: `from csae import *`). For the ladder method, start at [`mlqae/README.md`](mlqae/README.md).
 
